@@ -1,14 +1,17 @@
 //! Custom peripheral (right-half) OLED renderer: centred Trishul logo,
 //! this half's battery %, and central-link status. Ported from the ZMK
 //! custom_status_screen.c right-half screen.
+//!
+//! Fonts are `FONT_9X15` throughout (was `FONT_5X8`) for legibility.
+//! Text is top-baseline anchored so positions are predictable.
 
 use core::fmt::Write as _;
 
 use embedded_graphics::mono_font::MonoTextStyle;
-use embedded_graphics::mono_font::ascii::FONT_5X8;
+use embedded_graphics::mono_font::ascii::FONT_9X15;
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::*;
-use embedded_graphics::text::Text;
+use embedded_graphics::text::{Baseline, Text};
 use rmk::display::{DisplayRenderer, RenderContext};
 use rmk::heapless::String;
 use rmk::types::battery::BatteryStatus;
@@ -40,11 +43,14 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
         // Trishul centred: (128 - 24) / 2 = 52, full 32-px height.
         draw_page_format_frame(display, &TRISHUL, 24, 52, 0);
 
-        let style = MonoTextStyle::new(&FONT_5X8, BinaryColor::On);
+        let style = MonoTextStyle::new(&FONT_9X15, BinaryColor::On);
 
         // Left column: central-link status.
+        // FONT_9X15: 4 chars = 36 px (x 0–36), clear of logo at x 52.
         let link = if ctx.central_connected { "LINK" } else { "----" };
-        Text::new(link, Point::new(2, 8), style).draw(display).ok();
+        Text::with_baseline(link, Point::new(0, 9), style, Baseline::Top)
+            .draw(display)
+            .ok();
 
         // Right column: this half's battery %.
         let mut bat: String<8> = String::new();
@@ -59,9 +65,12 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
                 let _ = write!(bat, "?");
             }
         }
-        // Right-align (FONT_5X8: 5-px glyph + 1-px advance = 6 px/char).
-        let x = 128 - (bat.len() as i32) * 6;
-        Text::new(&bat, Point::new(x, 8), style).draw(display).ok();
+        // Right-align: FONT_9X15 advance = 9 px/char.
+        // "100%" = 4 chars → x = 128 - 36 = 92, clear of logo end at x 76.
+        let x = 128 - (bat.len() as i32) * 9;
+        Text::with_baseline(&bat, Point::new(x, 9), style, Baseline::Top)
+            .draw(display)
+            .ok();
     }
 }
 
