@@ -355,7 +355,7 @@ The central (left) half drives an SSD1306 128×32 OLED over I²C:
 driver = "ssd1306"
 size = "128x32"
 rotation = 0
-renderer = "OledRenderer"
+renderer = "crate::status::StatusRenderer"
 
 [split.central.display.protocol.i2c]
 instance = "TWISPI0"
@@ -367,15 +367,17 @@ scl = "P0_20"
 `i2c0` / TWIM0 block used by the ZMK Corne shield (`i2c0: &i2c0` in `corne_left.overlay`). The
 `ssd1306` feature in `Cargo.toml` enables the driver.
 
-The built-in `OledRenderer` shows layer name, battery percentage, BLE connection status, WPM, and
-active modifiers on the central screen.
+`crate::status::StatusRenderer` (in `src/status.rs`) renders the central screen: layer name
+(BASE/NAV/NUM/MEDIA/SYM/FUN/MOUSE) in `FONT_9X15_BOLD`, battery % right-aligned in the same
+font, and a bottom strip with: modifier letters `S C A G` (active = inverted box); WPM in
+`FONT_6X10`; and the active BLE profile `P0`–`P3` always visible in `FONT_9X15_BOLD` at a
+fixed right-edge position. A small `FONT_6X10` state label (`USB` or `~`) appears left of the
+profile number in wired or advertising mode; absent when BLE-connected. See
+`docs/DISPLAY.md` for pixel-accurate mockups and field-map tables.
 
-**Peripheral display / Trishul logo — not ported.** The ZMK right-half screen displayed a custom
-Trishul logo (a 24×32 px LVGL bitmap in `custom_status_screen.c`). Porting this requires
-implementing a custom `DisplayRenderer` trait in Rust (wrapping an `embedded_graphics`
-`ImageRaw<BinaryColor>` for the logo + dynamic battery/connection overlays) and referencing it via
-`renderer = "crate::trishul::TrishulRenderer"` in a `[[split.peripheral]]` display table. This is
-an optional enhancement — it is out of scope for core parity and not present in the current build.
+The peripheral (right half) runs `crate::trishul::TrishulRenderer` (`src/trishul.rs`): the
+Trishul logo centred, central-link status (`LINK`/`----`) on the left, and battery % right-aligned,
+all in `FONT_9X15`.
 
 ---
 
