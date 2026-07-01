@@ -1,0 +1,172 @@
+# yuyudhan-1 keymap on Corne split, 2x nice!nano v2 (nRF52840), wireless BLE.
+# Left half = central (USB/BLE to host). Right half = peripheral (BLE to central).
+# Pin map = ZMK `corne` shield + nice!nano pro_micro mapping (verified 1:1).
+
+[keyboard]
+name = "yuyudhan-1"
+product_name = "yuyudhan-1"
+vendor_id = 0x4c4b
+product_id = 0x7975
+manufacturer = "yuyudhan"
+chip = "nrf52840"
+
+[rmk]
+# MUST be 4: makes User6 = clear-bond (BT_CLR) and User7 = output-toggle (OUT_TOG).
+ble_profiles_num = 4
+
+[storage]
+
+[ble]
+enabled = true
+battery_adc_pin = "vddh"
+adc_divider_measured = 2000
+adc_divider_total = 2806
+# nRF52840 max tx power (matches ZMK CONFIG_BT_CTLR_TX_PWR_PLUS_8).
+default_tx_power = 8
+
+# Vial: hold the two left thumb keys (electrical (3,3) and (3,4)) to unlock.
+[host]
+unlock_keys = [[3, 3], [3, 4]]
+
+[layout]
+rows = 4
+cols = 12
+layers = 7
+# 36 used positions (ZMK default_transform): main cols 1-5 / 6-10, thumb row cols 3-5 / 6-8.
+# <hand> tags (L/R) present for optional unilateral_tap HRM fallback.
+matrix_map = """
+(0,1,L) (0,2,L) (0,3,L) (0,4,L) (0,5,L)   (0,6,R) (0,7,R) (0,8,R) (0,9,R) (0,10,R)
+(1,1,L) (1,2,L) (1,3,L) (1,4,L) (1,5,L)   (1,6,R) (1,7,R) (1,8,R) (1,9,R) (1,10,R)
+(2,1,L) (2,2,L) (2,3,L) (2,4,L) (2,5,L)   (2,6,R) (2,7,R) (2,8,R) (2,9,R) (2,10,R)
+                (3,3,L) (3,4,L) (3,5,L)   (3,6,R) (3,7,R) (3,8,R)
+"""
+
+# Layer 0 — BASE (QWERTY + GACS home-row mods)
+[[layer]]
+name = "BASE"
+keys = """
+Q                W                E                R                T                    Y                U                I                O                P
+MT(A, LGui, HRM) MT(S, LAlt, HRM) MT(D, LCtrl, HRM) MT(F, LShift, HRM) G                 H                MT(J, RShift, HRM) MT(K, RCtrl, HRM) MT(L, RAlt, HRM) MT(Quote, RGui, HRM)
+Z                X                C                V                B                    N                M                Comma            Dot              Slash
+                                  LT(3, Escape, TL) LT(1, Space, TL) LT(6, Tab, TL)      LT(4, Enter, TL) LT(2, Backspace, TL) LT(5, Delete, TL)
+"""
+
+# Layer 1 — NAV (hold SPACE)
+[[layer]]
+name = "NAV"
+keys = """
+No   No   No   No   No                       WM(Z, LGui | LShift) WM(V, LGui) WM(C, LGui) WM(X, LGui) WM(Z, LGui)
+LGui LAlt LCtrl LShift No                     Left      Down      Up        Right     CapsLock
+No   No   No   No   No                        Home      PageDown  PageUp    End       Insert
+               No   No   No                   Enter     Backspace Delete
+"""
+
+# Layer 2 — NUM (hold BSPC)
+[[layer]]
+name = "NUM"
+keys = """
+LeftBracket Kc7 Kc8 Kc9 RightBracket          No No No No No
+Semicolon   Kc4 Kc5 Kc6 Equal                 No RShift RCtrl RAlt RGui
+Grave       Kc1 Kc2 Kc3 Backslash             No No No No No
+                Dot Kc0 Minus                 No No No
+"""
+
+# Layer 3 — MEDIA (hold ESC). display_tog has no RMK equivalent -> No.
+[[layer]]
+name = "MEDIA"
+keys = """
+No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 WM(Q, LShift | LGui)
+LGui LAlt LCtrl LShift No                      No           AudioVolDown   AudioVolUp   MediaPrevTrack MediaNextTrack
+No   No   No   No   No                         User7        User0          User1        User2          User3
+               No   No   No                    MediaStop    MediaPlayPause AudioMute
+"""
+
+# Layer 4 — SYM (hold ENTER)
+[[layer]]
+name = "SYM"
+keys = """
+SHIFTED(LeftBracket) SHIFTED(Kc7) SHIFTED(Kc8) SHIFTED(Kc9) SHIFTED(RightBracket)   No No No No No
+SHIFTED(Semicolon)   SHIFTED(Kc4) SHIFTED(Kc5) SHIFTED(Kc6) SHIFTED(Equal)          No RShift RCtrl RAlt RGui
+SHIFTED(Grave)       SHIFTED(Kc1) SHIFTED(Kc2) SHIFTED(Kc3) SHIFTED(Backslash)      No No No No No
+                     SHIFTED(Kc9) SHIFTED(Kc0) SHIFTED(Minus)                       No No No
+"""
+
+# Layer 5 — FUN (hold DEL)
+[[layer]]
+name = "FUN"
+keys = """
+F12 F7 F8 F9 PrintScreen                       No No No No No
+F11 F4 F5 F6 ScrollLock                         No RShift RCtrl RAlt RGui
+F10 F1 F2 F3 Pause                              No No No No No
+           Menu Space Tab                       No No No
+"""
+
+# Layer 6 — MOUSE (hold TAB). ZMK btn order LCLK/MCLK/RCLK -> RMK Btn1/Btn3/Btn2.
+[[layer]]
+name = "MOUSE"
+keys = """
+No   No   No   No   No                          No             No             No           No             No
+LGui LAlt LCtrl LShift No                        MouseLeft      MouseDown      MouseUp      MouseRight     No
+No   No   No   No   No                           MouseWheelLeft MouseWheelDown MouseWheelUp MouseWheelRight No
+               No   No   No                      MouseBtn1      MouseBtn3      MouseBtn2
+"""
+
+# Home-row mods: ZMK &mt tap-preferred + require-prior-idle-ms=150 + tapping-term=200.
+# Thumb layer-taps: ZMK &lt balanced + tapping-term=200 (no prior-idle, off home row).
+[behavior.morse]
+enable_flow_tap = true
+prior_idle_time = "150ms"
+hold_timeout = "200ms"
+gap_timeout = "200ms"
+
+[behavior.morse.profiles]
+HRM = { enable_flow_tap = true, normal_mode = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+TL  = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+
+[split]
+connection = "ble"
+
+# Left half = central. cols pro_micro 21,20,19,18,15,14 -> P0_31,P0_29,P0_02,P1_15,P1_13,P1_11
+[split.central]
+rows = 4
+cols = 6
+row_offset = 0
+col_offset = 0
+ble_addr = [0x18, 0xe2, 0x21, 0x80, 0xc0, 0xc7]
+battery_adc_pin = "vddh"
+adc_divider_measured = 2000
+adc_divider_total = 2806
+
+[split.central.matrix]
+matrix_type = "normal"
+row_pins = ["P0_22", "P0_24", "P1_00", "P0_11"]
+col_pins = ["P0_31", "P0_29", "P0_02", "P1_15", "P1_13", "P1_11"]
+
+# Central OLED status screen (SSD1306 128x32, I2C on P0.17 SDA / P0.20 SCL).
+[split.central.display]
+driver = "ssd1306"
+size = "128x32"
+rotation = 0
+renderer = "OledRenderer"
+
+[split.central.display.protocol.i2c]
+instance = "TWISPI0"
+sda = "P0_17"
+scl = "P0_20"
+
+# Right half = peripheral. col_offset=6; col order REVERSED:
+# pro_micro 14,15,18,19,20,21 -> P1_11,P1_13,P1_15,P0_02,P0_29,P0_31
+[[split.peripheral]]
+rows = 4
+cols = 6
+row_offset = 0
+col_offset = 6
+ble_addr = [0x7e, 0xfe, 0x73, 0x9e, 0x66, 0xe3]
+battery_adc_pin = "vddh"
+adc_divider_measured = 2000
+adc_divider_total = 2806
+
+[split.peripheral.matrix]
+matrix_type = "normal"
+row_pins = ["P0_22", "P0_24", "P1_00", "P0_11"]
+col_pins = ["P1_11", "P1_13", "P1_15", "P0_02", "P0_29", "P0_31"]
