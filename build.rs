@@ -19,10 +19,10 @@ use const_gen::*;
 use xz2::read::XzEncoder;
 
 fn main() {
-    println!("cargo:rerun-if-changed=keyboard.toml");
+    println!("cargo:rerun-if-changed=config/keyboard.toml");
 
-    // Generate vial config at the root of project
-    println!("cargo:rerun-if-changed=vial.json");
+    // Generate vial config from config/vial.json
+    println!("cargo:rerun-if-changed=config/vial.json");
     generate_vial_config();
 
     // Put `memory.x` in our output directory and ensure it's
@@ -58,7 +58,7 @@ fn generate_vial_config() {
     // Generated vial config file
     let out_file = Path::new(&env::var_os("OUT_DIR").unwrap()).join("config_generated.rs");
 
-    let p = Path::new("vial.json");
+    let p = Path::new("config/vial.json");
     let mut content = String::new();
     match File::open(p) {
         Ok(mut file) => {
