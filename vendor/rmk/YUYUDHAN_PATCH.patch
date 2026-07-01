@@ -1,0 +1,73 @@
+--- a/rmk/src/matrix.rs
++++ b/rmk/src/matrix.rs
+@@ -1,7 +1,7 @@
+ #[cfg(feature = "async_matrix")]
+ use core::pin::pin;
+ 
+-use embassy_time::Timer;
++use embassy_time::{Duration, Timer};
+ use embedded_hal::digital::{InputPin, OutputPin};
+ use rmk_macro::input_device;
+ #[cfg(feature = "async_matrix")]
+@@ -165,6 +165,11 @@
+     /// Re-scan needed flag
+     #[cfg(feature = "async_matrix")]
+     rescan_needed: bool,
++    /// Extra delay applied before publishing each scanned event. Non-zero ONLY on
++    /// the split central (set via `with_hold_back_micros` in the `rmk_central`
++    /// codegen) to compensate for peripheral BLE latency and keep cross-half key
++    /// order correct. Peripheral and unibody keyboards leave this 0 (no effect).
++    hold_back: Duration,
+ }
+ 
+ impl<
+@@ -353,9 +358,17 @@
+             debouncer,
+             key_states: [[KeyState::new(); ROW]; COL],
+             scan_pos: (0, 0),
++            hold_back: Duration::from_ticks(0),
+             #[cfg(feature = "async_matrix")]
+             rescan_needed: false,
+         }
++    }
++
++    /// Set the pre-publish hold-back delay in microseconds. Central-only; see the
++    /// `hold_back` field. Called from the `rmk_central` proc-macro codegen.
++    pub fn with_hold_back_micros(mut self, us: u64) -> Self {
++        self.hold_back = Duration::from_micros(us);
++        self
+     }
+ }
+ 
+@@ -472,6 +485,9 @@
+     async fn run(&mut self) -> ! {
+         loop {
+             let event = self.read_event().await;
++            if self.hold_back.as_ticks() > 0 {
++                Timer::after(self.hold_back).await;
++            }
+             publish_event_async(event).await;
+         }
+     }
+--- a/rmk-macro/src/codegen/orchestrator.rs
++++ b/rmk-macro/src/codegen/orchestrator.rs
+@@ -478,10 +478,18 @@
+                     quote! {
+                         #bootmagic
+                         let debouncer = #debouncer_type::new();
+-                        let mut matrix = ::rmk::matrix::Matrix::<_, _, _, #central_row, #central_col, #col2row, #central_row_offset, #central_col_offset>::new(row_pins, col_pins, debouncer);
++                        // hold-back: 3750µs — split central only, compensates peripheral
++                        // BLE latency for cross-half key order. Tuning: raise (6000→8000µs)
++                        // only while peripheral-late flips persist AND same-hand-ahead
++                        // flips stay absent; max 12000µs. See openspec split-sync-order.
++                        let mut matrix = ::rmk::matrix::Matrix::<_, _, _, #central_row, #central_col, #col2row, #central_row_offset, #central_col_offset>::new(row_pins, col_pins, debouncer).with_hold_back_micros(3750);
+                     }
+                 }
+                 MatrixType::DirectPin => {
++                    // NOTE: no `.with_hold_back_micros(...)` here — DirectPinMatrix has
++                    // no such builder (only `Matrix` does). A direct-pin split central
++                    // that wants cross-half hold-back must add the field+builder to
++                    // DirectPinMatrix first. This board is matrix_type="normal".
+                     let low_active = split_config.central.matrix.direct_pin_low_active;
+                     let size = split_config.central.rows * split_config.central.cols;
+                     quote! {

@@ -83,3 +83,11 @@ debug = true            # no overhead for bare-metal
 opt-level = "z"         # optimize for binary size
 overflow-checks = false
 lto = "fat"
+
+
+# Local vendored RMK (rev b98204928e9a8532064ce99add1f6c4c554e08c9) carrying the
+# split cross-half key-order hold-back patch. See vendor/rmk/YUYUDHAN_PATCH.md.
+# Patching `rmk` alone cascades: its `../rmk-macro`, `../rmk-types`, `../rmk-config`
+# path-deps resolve inside the vendored tree, so no separate patch entries needed.
+[patch."https://github.com/HaoboGu/rmk"]
+rmk = { path = "vendor/rmk/rmk" }
