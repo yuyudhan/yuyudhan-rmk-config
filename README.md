@@ -3,12 +3,12 @@
 RMK (Rust) firmware for a **Corne split keyboard** (42-key hardware, 36-key layout) on
 two **nice!nano v2** controllers (nRF52840), wireless over BLE. This is a port of the
 `yuyudhan-1` ZMK keymap to [RMK](https://github.com/HaoboGu/rmk), with the entire keymap
-expressed in a single [`keyboard.toml`](keyboard.toml).
+expressed in a single [`config/keyboard.toml`](config/keyboard.toml).
 
 - **Left half = central** — USB/BLE to the host, holds the keymap, runs Vial.
 - **Right half = peripheral** — BLE to the central only.
 
-One profile, one keymap. Everything lives in `keyboard.toml`; there is no second variant.
+One profile, one keymap. Everything lives in `config/keyboard.toml`; there is no second variant.
 
 ## Hardware
 
@@ -35,7 +35,7 @@ One profile, one keymap. Everything lives in `keyboard.toml`; there is no second
 
 **Home-row mods** use the `HRM` morse profile (tap-preferred feel, 200 ms hold, 150 ms
 prior-idle). **Thumb layer-taps** use the `TL` profile (balanced/permissive-hold, 200 ms).
-Edit these in the `[behavior.morse.profiles]` table of `keyboard.toml`.
+Edit these in the `[behavior.morse.profiles]` table of `config/keyboard.toml`.
 
 ### MEDIA-layer Bluetooth keys
 
@@ -53,18 +53,21 @@ Requires [`just`](https://github.com/casey/just), a Rust toolchain, and (one-tim
 embedded tools. `just setup` installs everything it needs.
 
 ```sh
-just            # list recipes
-just setup      # one-time: target, llvm-tools, flip-link, cargo-make, cargo-binutils, cargo-hex-to-uf2
-just build      # build BOTH halves -> rmk-central.uf2 + rmk-peripheral.uf2
-just check      # fast compile-only sanity check of both bins
-just central     # build only the left half UF2
-just peripheral  # build only the right half UF2
-just expand      # macro-expand the keymap to confirm it compiled in (needs cargo-expand)
-just clean       # wipe build cache + generated .hex/.uf2
+just                  # list recipes
+just setup            # one-time toolchain: target, llvm-tools, flip-link, cargo-make, cargo-binutils, cargo-hex-to-uf2
+just build both       # build BOTH halves -> rmk-central.uf2 + rmk-peripheral.uf2
+just build left       # build only the LEFT half (central) UF2
+just build right      # build only the RIGHT half (peripheral) UF2
+just check both       # fast compile-only sanity check (left | right | both)
+just docs svg         # render config/keyboard.toml -> yuyudhan-1_keymap.svg
+just docs html        # render config/keyboard.toml -> yuyudhan-1-viewer.html
+just expand left      # macro-expand the keymap to confirm it compiled in (needs cargo-expand)
+just clean            # wipe build cache + loose root .hex/.uf2 (keeps local firmware/ archive)
 ```
 
-`just build` runs the `cargo make uf2 --release` chain (objcopy → hex → uf2) and writes
-`rmk-central.uf2` and `rmk-peripheral.uf2` to the repo root.
+`just build <target>` runs the `cargo make` chain (objcopy → hex → uf2), writes the UF2(s) to
+the repo root, and archives them plus a config + keymap-visual snapshot into a local
+`firmware/<datetime>/` directory (gitignored) so you can always re-flash an older build.
 
 ## Flash
 
@@ -73,8 +76,8 @@ The nice!nano's Adafruit bootloader accepts drag-and-drop `.uf2` — no probe ne
 1. Double-tap the reset button on a half → it mounts as `/Volumes/NICENANO`.
 2. Flash the matching half:
    ```sh
-   just flash central      # left half  (rmk-central.uf2)
-   just flash peripheral   # right half (rmk-peripheral.uf2)
+   just flash left       # left half  (rmk-central.uf2)
+   just flash right      # right half (rmk-peripheral.uf2)
    ```
    (Or drag the `.uf2` onto the `NICENANO` drive manually.)
 3. Repeat for the other half. The board reboots and unmounts automatically.
@@ -86,5 +89,5 @@ firmware (not just the keymap) changes.
 
 ## Editing the keymap
 
-- **Static:** edit the `[[layer]]` `keys` blocks in `keyboard.toml`, then `just build` and reflash the central.
+- **Static:** edit the `[[layer]]` `keys` blocks in `config/keyboard.toml`, then `just build both` and reflash the central.
 - **Live:** open [vial.rocks](https://vial.rocks) over USB, hold the two left thumb keys, click **Unlock**, and remap in the browser.
