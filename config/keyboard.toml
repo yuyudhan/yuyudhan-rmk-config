@@ -31,7 +31,7 @@ unlock_keys = [[3, 3], [3, 4]]
 [layout]
 rows = 4
 cols = 12
-layers = 7
+layers = 8
 # 36 used positions (ZMK default_transform): main cols 1-5 / 6-10, thumb row cols 3-5 / 6-8.
 # <hand> tags (L/R) present for optional unilateral_tap HRM fallback.
 matrix_map = """
@@ -71,12 +71,12 @@ Grave       Kc1 Kc2 Kc3 Backslash             No No No No No
                 Dot Kc0 Minus                 No No No
 """
 
-# Layer 3 — MEDIA (hold ESC). display_tog has no RMK equivalent -> No.
+# Layer 3 — MEDIA (hold ESC). TG(7) (above output-toggle) blanks both OLEDs.
 [[layer]]
 name = "MEDIA"
 keys = """
 No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 WM(Q, LShift | LGui)
-LGui LAlt LCtrl LShift No                      No           AudioVolDown   AudioVolUp   MediaPrevTrack MediaNextTrack
+LGui LAlt LCtrl LShift No                      TG(7)        AudioVolDown   AudioVolUp   MediaPrevTrack MediaNextTrack
 No   No   No   No   No                         User7        User0          User1        User2          User3
                No   No   No                    MediaStop    MediaPlayPause AudioMute
 """
@@ -111,16 +111,28 @@ No   No   No   No   No                           MouseWheelLeft MouseWheelDown M
                No   No   No                      MouseBtn1      MouseBtn3      MouseBtn2
 """
 
-# Home-row mods: balanced/permissive-hold, flow-tap off, bilateral (unilateral_tap).
+# Layer 7 — DISPOFF (TG(7) from MEDIA). Fully transparent so every key still
+# falls through to the layers below; its only purpose is to signal both OLED
+# renderers (ctx.layer == 7) to blank. Toggle TG(7) again to restore.
+[[layer]]
+name = "DISPOFF"
+keys = """
+_______ _______ _______ _______ _______        _______ _______ _______ _______ _______
+_______ _______ _______ _______ _______        _______ _______ _______ _______ _______
+_______ _______ _______ _______ _______        _______ _______ _______ _______ _______
+                _______ _______ _______         _______ _______ _______
+"""
+
+# Home-row mods: hold-on-other-press (instant mod on next keypress), flow-tap ON (50ms prior-idle gate), bilateral (unilateral_tap).
 # Thumb layer-taps: ZMK &lt balanced + tapping-term=200 (no prior-idle, off home row).
 [behavior.morse]
 enable_flow_tap = true
-prior_idle_time = "150ms"
+prior_idle_time = "50ms"
 hold_timeout = "200ms"
 gap_timeout = "200ms"
 
 [behavior.morse.profiles]
-HRM = { enable_flow_tap = false, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+HRM = { enable_flow_tap = true, hold_on_other_press = true, unilateral_tap = true, hold_timeout = "120ms", gap_timeout = "200ms" }
 TL  = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 
 [split]

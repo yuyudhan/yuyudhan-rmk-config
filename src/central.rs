@@ -4,6 +4,7 @@
 use rmk::macros::rmk_central;
 
 mod status;
+mod layer_names;
 
 #[rmk_central]
 mod keyboard_central {}

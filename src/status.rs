@@ -17,8 +17,8 @@
 //!
 //! This makes the profile number visible even when flashing/testing over USB.
 //!
-//! Layer names are hardcoded to match `config/keyboard.toml` [[layer]] order.
-//! If that order changes, update LAYER_NAMES here in lockstep.
+//! Layer names live in `src/layer_names.rs` (shared with the right half) and must
+//! match `config/keyboard.toml` [[layer]] order. Update that module in lockstep.
 //! See docs/DISPLAY.md for pixel mockups and field-map tables.
 
 use core::fmt::Write as _;
@@ -33,9 +33,7 @@ use rmk::display::{DisplayRenderer, RenderContext};
 use rmk::heapless::String;
 use rmk::types::battery::BatteryStatus;
 use rmk::types::ble::BleState;
-
-/// Layer names — must match [[layer]] order in config/keyboard.toml (0-indexed).
-const LAYER_NAMES: [&str; 7] = ["BASE", "NAV", "NUM", "MEDIA", "SYM", "FUN", "MOUSE"];
+use crate::layer_names::{DISPLAY_OFF_LAYER, LAYER_NAMES};
 
 /// FONT_9X15_BOLD: character advance = 9 px.
 const ADV_BIG: i32 = 9;
@@ -57,6 +55,9 @@ impl DisplayRenderer<BinaryColor> for StatusRenderer {
     fn render<D: DrawTarget<Color = BinaryColor>>(&mut self, ctx: &RenderContext, display: &mut D) {
         display.clear(BinaryColor::Off).ok();
         if ctx.sleeping {
+            return;
+        }
+        if ctx.layer == DISPLAY_OFF_LAYER {
             return;
         }
 
