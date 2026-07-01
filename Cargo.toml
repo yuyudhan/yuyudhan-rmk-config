@@ -39,7 +39,7 @@ embassy-nrf = { version = "0.10", features = [
     "nfc-pins-as-gpio",
     "time",
 ] }
-embassy-executor = { version = "0.10", features = [
+embassy-executor= { version = "0.10", features = [
     "defmt",
     "platform-cortex-m",
     "executor-thread",
@@ -53,7 +53,6 @@ embedded-graphics = "0.8"
 rand = { version = "0.8.4", default-features = false }
 rand_core = { version = "0.6" }
 rand_chacha = { version = "0.3", default-features = false }
-
 
 [build-dependencies]
 xz2 = "0.1.7"
@@ -83,11 +82,3 @@ debug = true            # no overhead for bare-metal
 opt-level = "z"         # optimize for binary size
 overflow-checks = false
 lto = "fat"
-
-
-# Local vendored RMK (rev b98204928e9a8532064ce99add1f6c4c554e08c9) carrying the
-# split cross-half key-order hold-back patch. See vendor/rmk/YUYUDHAN_PATCH.md.
-# Patching `rmk` alone cascades: its `../rmk-macro`, `../rmk-types`, `../rmk-config`
-# path-deps resolve inside the vendored tree, so no separate patch entries needed.
-[patch."https://github.com/HaoboGu/rmk"]
-rmk = { path = "vendor/rmk/rmk" }
