@@ -1,21 +1,22 @@
-# Rust build artifacts
-/target/
-**/*.rs.bk
+# Rust build cache
+/target
 
-# Cargo lock is intentionally committed for binaries/firmware
-# Cargo.lock
+# Intermediate objcopy output (regenerated every build)
+/rmk-central.hex
+/rmk-peripheral.hex
 
-# OS
+# Built firmware — never committed. UF2s at repo root and the timestamped
+# firmware/<datetime>/ snapshots are local build outputs; regenerate with `just build`.
+/rmk-central.uf2
+/rmk-peripheral.uf2
+/firmware/
+
+# Python bytecode (keymap docs generator)
+scripts/__pycache__/
+
+# macOS
 .DS_Store
-Thumbs.db
 
-# Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Debug / probe
-*.elf
-*.bin
-*.hex
+# Generated keymap documentation (regenerate with: just docs)
+/*.svg
+/*.html
