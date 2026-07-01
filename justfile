@@ -30,12 +30,12 @@ lint bin="all":
 
 # --- fmt ---
 
-# Format source files; pass bin to check only (central | peripheral | all)
-fmt bin="all":
+# Format all source files (rustfmt operates on files, not per-binary)
+fmt:
     cargo fmt --all
 
-# Check formatting without modifying (central | peripheral | all)
-fmt-check bin="all":
+# Check formatting without modifying
+fmt-check:
     cargo fmt --all -- --check
 
 # --- build ---
