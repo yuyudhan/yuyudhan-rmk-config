@@ -170,3 +170,17 @@ adc_divider_total = 2806
 matrix_type = "normal"
 row_pins = ["P0_22", "P0_24", "P1_00", "P0_11"]
 col_pins = ["P1_11", "P1_13", "P1_15", "P0_02", "P0_29", "P0_31"]
+
+# Right half (peripheral) OLED status screen — SSD1306 128x32, same I2C bus
+# as the central half (TWISPI0, P0.17 SDA / P0.20 SCL, addr 0x3C default).
+# Custom renderer ports the ZMK Trishul + battery + link screen.
+[split.peripheral.display]
+driver = "ssd1306"
+size = "128x32"
+rotation = 0
+renderer = "crate::trishul::TrishulRenderer"
+
+[split.peripheral.display.protocol.i2c]
+instance = "TWISPI0"
+sda = "P0_17"
+scl = "P0_20"
