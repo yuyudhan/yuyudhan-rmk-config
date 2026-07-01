@@ -2840,6 +2840,7 @@ dependencies = [
  "embassy-executor",
  "embassy-nrf",
  "embassy-time",
+ "embedded-graphics",
  "json",
  "nrf-mpsl",
  "nrf-sdc",
