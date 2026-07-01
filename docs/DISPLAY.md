@@ -41,9 +41,10 @@ y=32 └────────────────────────
 | 4 | SYM | layer 4 |
 | 5 | FUN | layer 5 |
 | 6 | MOUSE | layer 6 |
-| ≥7 | L{n} | fallback, unlikely |
+| 7 | DISPOFF | layer 7 — both displays blank (ctx.layer == 7) |
+| ≥8 | L{n} | fallback, unlikely |
 
-> **Keep in sync:** `LAYER_NAMES` in `src/status.rs` is hardcoded — rmk has no runtime layer-name API. If `config/keyboard.toml` layer order changes, update the constant in lockstep.
+> **Keep in sync:** `LAYER_NAMES` lives in `src/layer_names.rs`, shared by both halves (`StatusRenderer` and `TrishulRenderer`) — rmk has no runtime layer-name API. If `config/keyboard.toml` layer order changes, update that one constant in lockstep.
 
 ### BT profile display (bottom-right)
 
@@ -96,46 +97,59 @@ Profile is 0-indexed, matching the `User0`–`User3` profile-select keys in the 
 
 ## RIGHT half (peripheral) — `src/trishul.rs` → `TrishulRenderer`
 
-### Layout — full 32 px, three horizontal regions
+### Layout — full 32 px, Trishul centred with flanking zones
 
 ```
-x:   0         52        76        128
-     ├─LINK─────┼──TRISHUL─┼──BAT%───┤
+x:   0         48  52        76  79      92      128
+     ├─LAYER────┤sp├──TRISHUL─┤sp├────────┼─BAT%──┤
+     └CAPS(24-31)┘                        (right-aligned)
 ```
 
-The Trishul logo is 24 px wide, centred at x=52 (pixels 52–75). Text zones clear it:
-- **LINK status**: x=0, logo starts at x=52 — 16 px of clearance for 4-char text (36 px at FONT_9X15).
-- **Battery %**: rightmost chars end at x=128, logo ends at x=76 — gap of at least 16 px for even "100%".
+The Trishul logo is 24 px wide, centred at x=52 (pixels 52–75). Everything else clears it:
+- **Left zone** (x=0, y=9): active **layer name** when the split link is up; `----` when it's down (a real name doubles as the link-up cue). Max shown name "MEDIA"/"MOUSE" = 5×9 = x 0–44; logo starts x=52 → 8 px gap. `DISPOFF` (layer 7) is never drawn — that layer blanks the screen.
+- **Battery %** (right-aligned, y=9): rightmost char ends at x=128; "100%" starts at x=92, logo ends at x=75 → 17 px gap.
+- **CAPS badge** (rows 24–31, x 0–21): inverted 22×8 box with "CAPS" in `FONT_5X8`, drawn only while Caps Lock is on. Below the layer name (which ends at row 23) and left of the Trishul base (x≥52).
+- **Spark marks** (flank columns x=48 and x=79): small 5-px plus shapes that light up on each fresh right-hand keypress and rotate by animation frame, giving an orbiting twinkle around the Trishul. Purely event-driven — the display already redraws on every `KeyboardEvent`, so there is **no `render_interval`** and no idle-battery cost. Count scales with WPM (2 at rest … 8 at ≥240 wpm).
 
 ### Field map
 
 | Region | Source field | Font | Position |
 |--------|-------------|------|----------|
-| Link status | `ctx.central_connected` | `FONT_9X15` | x=0, y=9, `Baseline::Top` |
+| Layer name / link | `ctx.central_connected` + `ctx.layer` → `LAYER_NAMES[n]` | `FONT_9X15` | x=0, y=9, `Baseline::Top` |
 | Trishul logo | constant bitmap | page-format | x=52, y=0 (full 32 px height) |
 | Battery % | `*ctx.battery` | `FONT_9X15` | right-aligned, y=9; advance 9 px/char |
+| CAPS badge | `ctx.caps_lock` | `FONT_5X8` (inverted) | box (0,24) size 22×8; text (1,24) |
+| Spark | `ctx.key_press_latch` + `ctx.wpm`, gated on `ctx.central_connected` | pixels | flank columns x=48 / x=79, rows 4–28 |
 
-Text at y=9 with a 15 px tall font occupies rows 9–23, visually centred in 32 px (9 px margin top and bottom).
+Layer/battery text at y=9 with a 15 px tall font occupies rows 9–23, visually centred in the top 32 px.
 
 ### Pixel mockups
 
-**Central connected, 92% battery:**
+**Linked, NAV layer, 92% battery, idle (no spark):**
 ```
 ┌──────────────────────────────────┐
-│LINK       ╔╗ ╔╗ ╔╗         92%  │  ← Trishul prong tips (rows 0–7)
-│           ╚╩═╩═╩╝               │  ← shaft (rows 8–31)
-└──────────────────────────────────┘
-```
-
-**Central disconnected, 47% battery:**
-```
-┌──────────────────────────────────┐
-│----       ╔╗ ╔╗ ╔╗         47%  │
+│NAV        ╔╗ ╔╗ ╔╗         92%  │  ← layer name replaces old "LINK"
 │           ╚╩═╩═╩╝               │
 └──────────────────────────────────┘
 ```
 
-**Sleeping:**
+**Linked, BASE layer, typing on the right hand (sparks orbiting), Caps Lock on:**
+```
+┌──────────────────────────────────┐
+│BASE      · ╔╗ ╔╗ ╔╗ ·      88%  │  ← "·" = spark marks in flank columns
+│CAPS       ╚╩═╩═╩╝  ·             │  ← inverted CAPS badge bottom-left
+└──────────────────────────────────┘
+```
+
+**Split link down, 47% battery:**
+```
+┌──────────────────────────────────┐
+│----       ╔╗ ╔╗ ╔╗         47%  │  ← "----" = central not linked
+│           ╚╩═╩═╩╝               │
+└──────────────────────────────────┘
+```
+
+**Sleeping / DISPOFF layer (7):**
 ```
 ┌──────────────────────────────────┐
 │                                  │  ← display cleared
@@ -151,5 +165,7 @@ Text at y=9 with a 15 px tall font occupies rows 9–23, visually centred in 32 
 - Modifiers max extent: x 0–44 (4th cell starts at 36, glyph ends at 44). Status min x: `128 - 9*6 = 74`. Gap = 29 px. ✓ No overlap.
 
 **RIGHT (trishul.rs):**
-- LINK: 4 chars × 9 px = 36 px (x 0–35). Logo starts at x=52. Gap = 16 px. ✓
-- Battery "100%": 4 chars × 9 px = 36 px → x=92 to x=128. Logo ends at x=75. Gap = 16 px. ✓
+- Layer name (or "----"): max "MEDIA"/"MOUSE" = 5 chars × 9 px = x 0–44. Logo starts x=52. Gap = 8 px. ✓
+- Battery "100%": 4 chars × 9 px = 36 px → x=92 to x=128. Logo ends at x=75. Gap = 17 px. ✓
+- Spark columns x=48 (plus reaches x 47–49) and x=79 (x 78–80): between layer text (≤44) and logo (≥52), and between logo (≤75) and battery (≥92). ✓
+- CAPS badge rows 24–31, x 0–21: below layer text (≤ row 23), left of logo base (x≥52). ✓

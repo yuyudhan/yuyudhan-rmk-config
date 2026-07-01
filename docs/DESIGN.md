@@ -23,7 +23,7 @@ reference for future maintainers.
   `config/keyboard.toml`.
 
 The project is a complete port of the ZMK keymap from
-`../yuyudhan-zmk-config/config/yuyudhan-1.keymap` (7 layers, home-row mods, thumb layer-taps,
+`../yuyudhan-zmk-config/config/yuyudhan-1.keymap` (8 layers, home-row mods, thumb layer-taps,
 media/Bluetooth control, mouse, symbols, function keys). No second variant or profile exists —
 one keymap, one build.
 
@@ -41,7 +41,7 @@ patching a C/Zephyr tree.
 system. This is a hard requirement for this keymap:
 
 - The **HRM** morse profile (home-row mods) needs `enable_flow_tap = true` so that a prior idle
-  gate of 150 ms suppresses phantom modifiers during fast rolls.
+  gate of 50 ms suppresses phantom modifiers during fast rolls.
 - The **TL** morse profile (thumb layer-taps) needs `enable_flow_tap = false` because thumbs are
   off the home row and the idle gate would cause the thumb tap to misfire after the natural pause
   between words.
@@ -132,7 +132,7 @@ key slots:
 [layout]
 rows = 4
 cols = 12
-layers = 7
+layers = 8
 matrix_map = """
 (0,1,L) (0,2,L) (0,3,L) (0,4,L) (0,5,L)   (0,6,R) (0,7,R) (0,8,R) (0,9,R) (0,10,R)
 (1,1,L) (1,2,L) (1,3,L) (1,4,L) (1,5,L)   (1,6,R) (1,7,R) (1,8,R) (1,9,R) (1,10,R)
@@ -154,7 +154,7 @@ Reading the map:
 
 ## Layers
 
-All 7 layers are defined as `[[layer]]` blocks in `config/keyboard.toml`. Layers are activated by
+All 8 layers are defined as `[[layer]]` blocks in `config/keyboard.toml`. Layers are activated by
 holding the indicated thumb key; tapping that key sends the label key instead.
 
 | Index | Name  | Thumb hold key | Purpose |
@@ -166,6 +166,7 @@ holding the indicated thumb key; tapping that key sends the label key instead.
 | 4 | SYM   | Enter (right-outer) | Programmer symbols { & * ( } / : $ % ^ + / ~ ! @ # | on the left hand |
 | 5 | FUN   | Delete (right-inner) | F1–F12 in numpad layout + PrintScreen / ScrollLock / Pause |
 | 6 | MOUSE | Tab (left-inner) | Pointer movement (HJKL positions), scroll wheel, mouse buttons on the right thumb |
+| 7 | DISPOFF | — (TG(7) from MEDIA) | Fully transparent; toggles both OLEDs off/on |
 
 ---
 
@@ -186,24 +187,31 @@ RMK's equivalent is the `morse` system with named profiles, assigned as the thir
 ### HRM profile — home-row mods
 
 ```toml
-HRM = { enable_flow_tap = false, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+HRM = { enable_flow_tap = true, hold_on_other_press = true, unilateral_tap = true, hold_timeout = "120ms", gap_timeout = "200ms" }
 ```
 
-- `permissive_hold = true` → balanced/permissive-hold mode: the modifier fires as soon as
-  another key is **pressed and released** while the HRM key is held, with no need to wait out
-  `hold_timeout`. This makes intentional mod combos (Ctrl+L, Shift+A) fast at any typing speed.
-- `enable_flow_tap = false` → the global `prior_idle_time = "150ms"` gate is NOT applied to
-  HRM keys. A modifier can fire even mid-streak (previous keypress < 150 ms ago). Without this,
-  at 100 wpm (inter-key ~120 ms) an HRM key could never become a modifier during normal typing.
+- `hold_on_other_press = true` → the modifier fires the instant **any other key is pressed**
+  while the HRM key is held, independent of release order. A fast roll that releases the HRM key
+  before the other key still produces the combo (verified by RMK's
+  `keyboard_morse_hold_on_other_press_test::test_mt_2`). This is what makes intentional mod combos
+  (Ctrl+L, Shift+A) fire quickly at speed — the previous `permissive_hold` mode required pressing
+  **and releasing** the other key while the HRM key was still held, so an early mod release
+  silently dropped the combo to a plain letter (the "must hold longer" problem).
+- `enable_flow_tap = true` → the global `prior_idle_time = "50ms"` gate IS applied to HRM keys.
+  If an HRM key is pressed within 50 ms of the previous keystroke (mid-streak), it is forced to a
+  tap. This is the phantom-mod guard that `hold_on_other_press` requires: without it, common
+  cross-hand bigrams that start on a home-row letter (a→n "and", s→o "so", d→o "do") would fire a
+  stray modifier during fast prose. Cost: a deliberate mid-flow mod needs a brief (~50 ms) pause.
 - `unilateral_tap = true` → any HRM key adjacent to a **same-hand** key resolves as a tap,
-  regardless of release order (FIFO or LIFO). This is the only same-hand-roll protection under
-  `permissive_hold` (the press-time guard in `MorseMode::Normal` does not apply here).
+  regardless of release order. This guards same-hand rolls in all modes.
   Consequence: same-hand mod combos require the **opposite-hand modifier** — Ctrl+C = K+C
   (right Ctrl), Ctrl+O = D+O (left Ctrl). Cross-hand combos (Ctrl+L, Shift+A) are unaffected.
-- `hold_timeout = "200ms"` → governs a *pure* hold with no other key pressed (e.g. holding
-  Shift alone to extend a selection); does not delay nested-key combos under permissive_hold.
-- `gap_timeout = "200ms"` → RMK-specific inter-event window, set equal to hold_timeout for
-  consistency.
+- `hold_timeout = "120ms"` → governs ONLY a *pure* hold with no other key pressed (e.g. holding
+  Shift alone to extend a selection). Combos do not wait on it under `hold_on_other_press`. Kept
+  at 120 ms deliberately: at a lower value an isolated home-row letter held past the timeout
+  (normal key dwell 70–120 ms) would misfire as a modifier.
+- `gap_timeout = "200ms"` → RMK-specific inter-event window for multi-step morse patterns; HRM
+  defines none, so it is inert here.
 
 ### TL profile — thumb layer-taps
 
@@ -337,12 +345,16 @@ home-row-mod letters and thumb-tap keys will not auto-repeat by re-hold.
 If key-repeat on re-hold becomes important, the only RMK path is a custom Rust key processor — it
 cannot be expressed in TOML.
 
-### (b) `display_tog` custom OLED toggle — mapped to `No`
+### (b) `display_tog` custom OLED toggle — ported via phantom layer 7
 
 ZMK's MEDIA layer had a custom `display_tog` behavior (`compatible = "zmk,behavior-display-toggle"`)
-which toggled the OLED on and off. RMK has no equivalent keycode. The position is mapped to `No`
-(blank/dead key). RMK manages display lifecycle automatically: the display blanks after idle and
-wakes on any keypress. Explicit toggle is not needed for normal use.
+which toggled the OLED on and off. RMK has no native display-toggle keycode, so the position is
+now implemented fork-free using a phantom **layer 7 (`DISPOFF`)**: `TG(7)` in the MEDIA layer
+toggles it on/off. Both custom renderers (`status.rs` / `trishul.rs`) check `ctx.layer == 7` and
+return immediately after `display.clear()`, blanking the screen. Because `SplitMessage::Layer` is
+forwarded central→peripheral, both halves blank in sync. The phantom layer is fully transparent
+(`_______` every slot), so typing continues normally while the display is off. State is
+runtime-only; a reboot restores both displays.
 
 ---
 
@@ -368,7 +380,7 @@ scl = "P0_20"
 `ssd1306` feature in `Cargo.toml` enables the driver.
 
 `crate::status::StatusRenderer` (in `src/status.rs`) renders the central screen: layer name
-(BASE/NAV/NUM/MEDIA/SYM/FUN/MOUSE) in `FONT_9X15_BOLD`, battery % right-aligned in the same
+(BASE/NAV/NUM/MEDIA/SYM/FUN/MOUSE/DISPOFF) in `FONT_9X15_BOLD`, battery % right-aligned in the same
 font, and a bottom strip with: modifier letters `S C A G` (active = inverted box); WPM in
 `FONT_6X10`; and the active BLE profile `P0`–`P3` always visible in `FONT_9X15_BOLD` at a
 fixed right-edge position. A small `FONT_6X10` state label (`USB` or `~`) appears left of the
@@ -527,4 +539,4 @@ After flashing both halves:
 5. **Output toggle:** while on MEDIA, tap output toggle (bottom-left of right hand) → switches
    between USB and BLE output.
 6. **Vial live remap:** open [vial.rocks](https://vial.rocks) over USB, hold both left thumb keys,
-   click Unlock → all 7 layers render and are editable without reflashing.
+   click Unlock → all 8 layers render and are editable without reflashing.

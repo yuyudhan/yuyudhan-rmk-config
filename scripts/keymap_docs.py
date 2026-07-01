@@ -101,7 +101,7 @@ SHIFTED_DISPLAY: dict[str, str] = {
 
 # Layer number → name
 LAYER_NUM_NAME: dict[int, str] = {
-    0: "BASE", 1: "NAV", 2: "NUM", 3: "MEDIA", 4: "SYM", 5: "FUN", 6: "MOUSE",
+    0: "BASE", 1: "NAV", 2: "NUM", 3: "MEDIA", 4: "SYM", 5: "FUN", 6: "MOUSE", 7: "DISPOFF",
 }
 
 # Layer name → description
@@ -113,6 +113,7 @@ LAYER_DESC: dict[str, str] = {
     "SYM":   "hold Enter — programmer symbols on left hand",
     "FUN":   "hold Del — F1–F12 + PrtSc/ScrLk/Pause",
     "MOUSE": "hold Tab — pointer move, scroll wheel, mouse buttons",
+    "DISPOFF": "TG(7) from MEDIA — blanks both OLED displays; toggle again to restore",
 }
 
 
