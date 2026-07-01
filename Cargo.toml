@@ -1,10 +1,8 @@
 [package]
-name = "rmk-nrf52840"
-version = "0.2.0"
-authors = ["Haobo Gu <haobogu@outlook.com>"]
-description = "Keyboard firmware written in Rust"
-homepage = "https://github.com/haobogu/rmk"
-repository = "https://github.com/haobogu/rmk"
+name = "yuyudhan-rmk-nrf52840"
+version = "0.1.0"
+authors = ["yuyudhan <ankurkumarpandey@gmail.com>"]
+description = "yuyudhan-1 Corne split keyboard firmware (RMK, nRF52840 / nice!nano, wireless BLE)"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 
