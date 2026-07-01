@@ -41,7 +41,7 @@ patching a C/Zephyr tree.
 system. This is a hard requirement for this keymap:
 
 - The **HRM** morse profile (home-row mods) needs `enable_flow_tap = true` so that a prior idle
-  gate of 50 ms suppresses phantom modifiers during fast rolls.
+  gate of 150 ms suppresses phantom modifiers during fast rolls.
 - The **TL** morse profile (thumb layer-taps) needs `enable_flow_tap = false` because thumbs are
   off the home row and the idle gate would cause the thumb tap to misfire after the natural pause
   between words.
@@ -187,31 +187,34 @@ RMK's equivalent is the `morse` system with named profiles, assigned as the thir
 ### HRM profile — home-row mods
 
 ```toml
-HRM = { enable_flow_tap = true, hold_on_other_press = true, unilateral_tap = true, hold_timeout = "120ms", gap_timeout = "200ms" }
+HRM = { enable_flow_tap = true, normal_mode = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 ```
 
-- `hold_on_other_press = true` → the modifier fires the instant **any other key is pressed**
-  while the HRM key is held, independent of release order. A fast roll that releases the HRM key
-  before the other key still produces the combo (verified by RMK's
-  `keyboard_morse_hold_on_other_press_test::test_mt_2`). This is what makes intentional mod combos
-  (Ctrl+L, Shift+A) fire quickly at speed — the previous `permissive_hold` mode required pressing
-  **and releasing** the other key while the HRM key was still held, so an early mod release
-  silently dropped the combo to a plain letter (the "must hold longer" problem).
-- `enable_flow_tap = true` → the global `prior_idle_time = "50ms"` gate IS applied to HRM keys.
-  If an HRM key is pressed within 50 ms of the previous keystroke (mid-streak), it is forced to a
-  tap. This is the phantom-mod guard that `hold_on_other_press` requires: without it, common
-  cross-hand bigrams that start on a home-row letter (a→n "and", s→o "so", d→o "do") would fire a
-  stray modifier during fast prose. Cost: a deliberate mid-flow mod needs a brief (~50 ms) pause.
+This profile replicates the ZMK `&mt` behavior (`flavor = "tap-preferred"`, `tapping-term-ms = 200`,
+`require-prior-idle-ms = 150`) used in the previous `yuyudhan-zmk-config`. RMK mode mapping:
+tap-preferred → `MorseMode::Normal` (`normal_mode = true`).
+
+- `normal_mode = true` → **tap-preferred**: the modifier fires ONLY on a sustained hold past
+  `hold_timeout` (`morse.rs`: `hold = released_time >= timeout_time`). A key released before the
+  timeout is a tap, regardless of overlapping presses or release order. This means fast rolls like
+  "for" / "and" / "so" are always clean letters — the next key's press does NOT fire the mod.
+  (`hold_on_other_press` was the previous setting and fired the mod instantly on the next keypress,
+  causing "for"→"O" and other phantom capitals; it was reverted for this reason.)
+  `permissive_hold` and `hold_on_other_press` MUST both be absent — `expand_profile` checks them
+  before `normal_mode`; either one truthy silently overrides this mode.
+- `enable_flow_tap = true` → the global `prior_idle_time = "150ms"` gate is applied to HRM keys.
+  If an HRM key is pressed within 150 ms of the previous keystroke (mid-streak), it is forced to an
+  immediate tap. This replicates ZMK `require-prior-idle-ms = 150`: fast typing rolls always emit
+  clean letters; a deliberate modifier requires ~150 ms of idle first.
 - `unilateral_tap = true` → any HRM key adjacent to a **same-hand** key resolves as a tap,
-  regardless of release order. This guards same-hand rolls in all modes.
+  regardless of release order. Guards same-hand rolls in all modes.
   Consequence: same-hand mod combos require the **opposite-hand modifier** — Ctrl+C = K+C
   (right Ctrl), Ctrl+O = D+O (left Ctrl). Cross-hand combos (Ctrl+L, Shift+A) are unaffected.
-- `hold_timeout = "120ms"` → governs ONLY a *pure* hold with no other key pressed (e.g. holding
-  Shift alone to extend a selection). Combos do not wait on it under `hold_on_other_press`. Kept
-  at 120 ms deliberately: at a lower value an isolated home-row letter held past the timeout
-  (normal key dwell 70–120 ms) would misfire as a modifier.
-- `gap_timeout = "200ms"` → RMK-specific inter-event window for multi-step morse patterns; HRM
-  defines none, so it is inert here.
+- `hold_timeout = "200ms"` → the tapping term. A deliberate modifier requires holding the HRM key
+  for ~200 ms with no release. Replicates ZMK `tapping-term-ms = 200`. Do NOT lower below ~150 ms:
+  at that point normal key dwell (70–120 ms) starts producing phantom mods on lingered letters.
+- `gap_timeout = "200ms"` → RMK inter-event window for multi-step morse patterns; HRM defines
+  none, so it is inert here.
 
 ### TL profile — thumb layer-taps
 
