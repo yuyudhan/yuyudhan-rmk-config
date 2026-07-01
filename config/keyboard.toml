@@ -111,7 +111,7 @@ No   No   No   No   No                           MouseWheelLeft MouseWheelDown M
                No   No   No                      MouseBtn1      MouseBtn3      MouseBtn2
 """
 
-# Home-row mods: ZMK &mt tap-preferred + require-prior-idle-ms=150 + tapping-term=200.
+# Home-row mods: balanced/permissive-hold, flow-tap off, bilateral (unilateral_tap).
 # Thumb layer-taps: ZMK &lt balanced + tapping-term=200 (no prior-idle, off home row).
 [behavior.morse]
 enable_flow_tap = true
@@ -120,7 +120,7 @@ hold_timeout = "200ms"
 gap_timeout = "200ms"
 
 [behavior.morse.profiles]
-HRM = { enable_flow_tap = true, normal_mode = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+HRM = { enable_flow_tap = false, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 TL  = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 
 [split]

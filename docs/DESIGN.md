@@ -177,7 +177,7 @@ ZMK uses two distinct behaviors for the two categories of hold keys on this keyb
 
 | ZMK behavior | Flavor | Purpose |
 |---|---|---|
-| `&mt` (mod-tap) | `tap-preferred` | Home-row mods: A S D F J K L ' |
+| `&mt` (mod-tap) | `balanced` | Home-row mods: A S D F J K L ' |
 | `&lt` (layer-tap) | `balanced` | Thumb cluster: Esc/Space/Tab/Enter/Bspc/Del |
 
 RMK's equivalent is the `morse` system with named profiles, assigned as the third argument to
@@ -186,17 +186,22 @@ RMK's equivalent is the `morse` system with named profiles, assigned as the thir
 ### HRM profile — home-row mods
 
 ```toml
-HRM = { enable_flow_tap = true, normal_mode = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+HRM = { enable_flow_tap = false, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 ```
 
-- `normal_mode = true` → matches ZMK `tap-preferred`: the hold (modifier) fires only after
-  `hold_timeout` elapses with no release. A key that is tapped and released before the timeout is
-  always recorded as a tap, even while another key is held. This prevents accidental modifier
-  firing during fast home-row rolls.
-- `enable_flow_tap = true` → activates the global `prior_idle_time = "150ms"` gate for keys using
-  this profile. A hold on an HRM key that follows another keypress within 150 ms is treated as a
-  tap, not a hold. Corresponds exactly to ZMK `require-prior-idle-ms = <150>`.
-- `hold_timeout = "200ms"` → matches ZMK `tapping-term-ms = <200>`.
+- `permissive_hold = true` → balanced/permissive-hold mode: the modifier fires as soon as
+  another key is **pressed and released** while the HRM key is held, with no need to wait out
+  `hold_timeout`. This makes intentional mod combos (Ctrl+L, Shift+A) fast at any typing speed.
+- `enable_flow_tap = false` → the global `prior_idle_time = "150ms"` gate is NOT applied to
+  HRM keys. A modifier can fire even mid-streak (previous keypress < 150 ms ago). Without this,
+  at 100 wpm (inter-key ~120 ms) an HRM key could never become a modifier during normal typing.
+- `unilateral_tap = true` → any HRM key adjacent to a **same-hand** key resolves as a tap,
+  regardless of release order (FIFO or LIFO). This is the only same-hand-roll protection under
+  `permissive_hold` (the press-time guard in `MorseMode::Normal` does not apply here).
+  Consequence: same-hand mod combos require the **opposite-hand modifier** — Ctrl+C = K+C
+  (right Ctrl), Ctrl+O = D+O (left Ctrl). Cross-hand combos (Ctrl+L, Shift+A) are unaffected.
+- `hold_timeout = "200ms"` → governs a *pure* hold with no other key pressed (e.g. holding
+  Shift alone to extend a selection); does not delay nested-key combos under permissive_hold.
 - `gap_timeout = "200ms"` → RMK-specific inter-event window, set equal to hold_timeout for
   consistency.
 
