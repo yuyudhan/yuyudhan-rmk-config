@@ -42,24 +42,24 @@ build target:
       left|right|both) ;;
       *) echo "Unknown target: {{target}}  (valid: left | right | both)" >&2; exit 1 ;;
     esac
-    # Compile + generate UF2s via cargo-make (objcopy -> hex -> uf2).
+    # Compile -> hex -> uf2 via cargo-make. All outputs land in ./build/ (staging).
     case "{{target}}" in
       left)  cargo make uf2-central --release ;;
       right) cargo make uf2-peripheral --release ;;
       both)  cargo make uf2 --release ;;
     esac
-    # Archive built artifacts + config snapshot into a timestamped dir.
+    # Move the finished UF2(s) from build/ into a timestamped keepsake dir.
     stamp="$(date '+%Y-%m-%d_%H-%M-%S')"
     dest="firmware/${stamp}"
     mkdir -p "$dest"
-    [ -f rmk-central.uf2 ]    && { case "{{target}}" in left|both) cp rmk-central.uf2    "$dest/";; esac; }
-    [ -f rmk-peripheral.uf2 ] && { case "{{target}}" in right|both) cp rmk-peripheral.uf2 "$dest/";; esac; }
+    case "{{target}}" in left|both)  [ -f build/rmk-central.uf2 ]    && mv build/rmk-central.uf2    "$dest/";; esac
+    case "{{target}}" in right|both) [ -f build/rmk-peripheral.uf2 ] && mv build/rmk-peripheral.uf2 "$dest/";; esac
+    # Snapshot the config + keymap visuals alongside the firmware (copies — sources stay in place).
     cp {{KEYMAP}} "$dest/"
     cp config/vial.json "$dest/" 2>/dev/null || true
-    # Snapshot the current keymap visuals too, if they've been generated.
     [ -f yuyudhan-1_keymap.svg ]  && cp yuyudhan-1_keymap.svg  "$dest/" || true
     [ -f yuyudhan-1-viewer.html ] && cp yuyudhan-1-viewer.html "$dest/" || true
-    echo "==> Archived firmware -> $dest"
+    echo "==> Firmware archived -> $dest (build/ staging + root left clean)"
     ls -l "$dest"
 
 # Compile-only sanity check. target = left | right | both. No .hex/.uf2 produced.
@@ -125,7 +125,7 @@ flash target:
       echo "==> cp reported an error — normal: the nice!nano reboots and unmounts mid-write. Flash succeeded."
     fi
 
-# Remove build cache and loose root artifacts (keeps firmware/<datetime>/ archive).
+# Remove the Rust build cache + the build/ staging dir (keeps firmware/<datetime>/ archive).
 clean:
     cargo clean
-    rm -f rmk-central.hex rmk-peripheral.hex rmk-central.uf2 rmk-peripheral.uf2
+    rm -rf build
