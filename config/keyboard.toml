@@ -123,7 +123,7 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
                 _______ _______ _______         _______ _______ _______
 """
 
-# Home-row mods: permissive-hold, flow-tap ON (150ms prior-idle gate), bilateral (unilateral_tap).
+# Home-row mods: balanced/permissive-hold, flow-tap off, bilateral (unilateral_tap).
 # Thumb layer-taps: ZMK &lt balanced + tapping-term=200 (no prior-idle, off home row).
 [behavior.morse]
 enable_flow_tap = true
@@ -132,7 +132,7 @@ hold_timeout = "200ms"
 gap_timeout = "200ms"
 
 [behavior.morse.profiles]
-HRM = { enable_flow_tap = true, permissive_hold = true, unilateral_tap = true, hold_timeout = "150ms", gap_timeout = "200ms" }
+HRM = { enable_flow_tap = false, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 TL  = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 
 [split]
