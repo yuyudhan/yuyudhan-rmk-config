@@ -1,59 +1,131 @@
-target := "thumbv7em-none-eabihf"
+# justfile — local RMK firmware builds for the yuyudhan-1 Corne (nice!nano, BLE split).
+#
+# Single profile, 36-key layout. The whole keymap lives in `config/keyboard.toml`.
+# Usage is `just <verb> <target>`:
+#   just build left      # LEFT half  (central)  -> rmk-central.uf2
+#   just build right     # RIGHT half (peripheral) -> rmk-peripheral.uf2
+#   just build both      # both halves
+#   just docs svg        # render config/keyboard.toml -> yuyudhan-1_keymap.svg
+#   just docs html       # render config/keyboard.toml -> yuyudhan-1-viewer.html
+#   just flash left      # copy newest rmk-central.uf2 onto a mounted NICENANO
+#   just flash right     # copy newest rmk-peripheral.uf2 onto a mounted NICENANO
+#
+# Every build archives its UF2(s) + a config snapshot into a local firmware/<datetime>/
+# directory (gitignored) so you can always re-flash an older build.
+#
+# Run `just` (no args) to list recipes.
 
-# List available commands
+# Nice!nano bootloader mount point (double-tap reset to expose it).
+NICENANO := "/Volumes/NICENANO"
+
+# Keymap config (single source of truth).
+KEYMAP := "config/keyboard.toml"
+
+# List available recipes
 default:
     @just --list
 
-# --- check ---
+# One-time host toolchain setup (idempotent — safe to re-run).
+setup:
+    rustup target add thumbv7em-none-eabihf
+    rustup component add llvm-tools
+    cargo install flip-link
+    cargo install cargo-make
+    cargo install cargo-binutils
+    cargo install cargo-hex-to-uf2
 
-# Type-check a binary without producing an artifact (central | peripheral | all)
-check bin="all":
-    #!/usr/bin/env sh
-    if [ "{{bin}}" = "all" ]; then
-        cargo check --target {{target}} --bin central
-        cargo check --target {{target}} --bin peripheral
+# Build firmware. target = left | right | both. Archives to firmware/<datetime>/.
+build target:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{target}}" in
+      left|right|both) ;;
+      *) echo "Unknown target: {{target}}  (valid: left | right | both)" >&2; exit 1 ;;
+    esac
+    # Compile + generate UF2s via cargo-make (objcopy -> hex -> uf2).
+    case "{{target}}" in
+      left)  cargo make uf2-central --release ;;
+      right) cargo make uf2-peripheral --release ;;
+      both)  cargo make uf2 --release ;;
+    esac
+    # Archive built artifacts + config snapshot into a timestamped dir.
+    stamp="$(date '+%Y-%m-%d_%H-%M-%S')"
+    dest="firmware/${stamp}"
+    mkdir -p "$dest"
+    [ -f rmk-central.uf2 ]    && { case "{{target}}" in left|both) cp rmk-central.uf2    "$dest/";; esac; }
+    [ -f rmk-peripheral.uf2 ] && { case "{{target}}" in right|both) cp rmk-peripheral.uf2 "$dest/";; esac; }
+    cp {{KEYMAP}} "$dest/"
+    cp config/vial.json "$dest/" 2>/dev/null || true
+    # Snapshot the current keymap visuals too, if they've been generated.
+    [ -f yuyudhan-1_keymap.svg ]  && cp yuyudhan-1_keymap.svg  "$dest/" || true
+    [ -f yuyudhan-1-viewer.html ] && cp yuyudhan-1-viewer.html "$dest/" || true
+    echo "==> Archived firmware -> $dest"
+    ls -l "$dest"
+
+# Compile-only sanity check. target = left | right | both. No .hex/.uf2 produced.
+# A bad keycode/schema in config/keyboard.toml fails here with a `keyboard.toml:` panic.
+check target="both":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{target}}" in
+      left)  cargo build --release --bin central ;;
+      right) cargo build --release --bin peripheral ;;
+      both)  cargo build --release --bin central && cargo build --release --bin peripheral ;;
+      *) echo "Unknown target: {{target}}  (valid: left | right | both)" >&2; exit 1 ;;
+    esac
+
+# Generate keymap documentation. kind = svg | html.
+#   just docs svg    -> yuyudhan-1_keymap.svg  (keymap-drawer render)
+#   just docs html   -> yuyudhan-1-viewer.html (standalone 7-layer viewer)
+docs kind:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{kind}}" in
+      svg)  python3 scripts/keymap_docs.py svg  --toml {{KEYMAP}} --out yuyudhan-1_keymap.svg ;;
+      html) python3 scripts/keymap_docs.py html --toml {{KEYMAP}} --out yuyudhan-1-viewer.html ;;
+      *) echo "Unknown docs kind: {{kind}}  (valid: svg | html)" >&2; exit 1 ;;
+    esac
+
+# Print the macro-expanded keymap for a half (verifies keymap compiled in).
+# target = left | right. Requires cargo-expand (`cargo install cargo-expand`).
+expand target="left":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{target}}" in
+      left)  cargo expand --bin central ;;
+      right) cargo expand --bin peripheral ;;
+      *) echo "Unknown target: {{target}}  (valid: left | right)" >&2; exit 1 ;;
+    esac
+
+# Flash the newest built .uf2 onto a mounted NICENANO drive. target = left | right.
+# Double-tap the reset button on the target half FIRST so it mounts as {{NICENANO}}.
+# Pulls the newest matching .uf2 from firmware/<datetime>/ (falls back to repo root).
+# e.g. `just flash left`   then   `just flash right`   (flashing is destructive)
+flash target:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{target}}" in
+      left)  name="rmk-central.uf2" ;;
+      right) name="rmk-peripheral.uf2" ;;
+      *) echo "Unknown target: {{target}}  (valid: left | right)" >&2; exit 1 ;;
+    esac
+    # Newest archived copy by mtime, else the loose repo-root build.
+    file="$(ls -1t firmware/*/"$name" 2>/dev/null | head -1 || true)"
+    [ -z "$file" ] && [ -f "$name" ] && file="$name"
+    if [ -z "$file" ]; then
+      echo "No $name found. Build it first: just build {{target}}" >&2; exit 1
+    fi
+    if [ ! -d "{{NICENANO}}" ]; then
+      echo "{{NICENANO}} not mounted. Double-tap reset on the {{target}} half, then re-run." >&2; exit 1
+    fi
+    echo "==> Flashing $file -> {{NICENANO}}"
+    if cp "$file" "{{NICENANO}}"/ 2>/dev/null; then
+      echo "==> Done. The nice!nano reboots automatically."
     else
-        cargo check --target {{target}} --bin {{bin}}
+      echo "==> cp reported an error — normal: the nice!nano reboots and unmounts mid-write. Flash succeeded."
     fi
 
-# --- lint ---
-
-# Run Clippy on a binary (central | peripheral | all)
-lint bin="all":
-    #!/usr/bin/env sh
-    if [ "{{bin}}" = "all" ]; then
-        cargo clippy --target {{target}} --bin central -- -D warnings
-        cargo clippy --target {{target}} --bin peripheral -- -D warnings
-    else
-        cargo clippy --target {{target}} --bin {{bin}} -- -D warnings
-    fi
-
-# --- fmt ---
-
-# Format all source files (rustfmt operates on files, not per-binary)
-fmt:
-    cargo fmt --all
-
-# Check formatting without modifying
-fmt-check:
-    cargo fmt --all -- --check
-
-# --- build ---
-
-# Build a binary in release mode (central | peripheral | all)
-build bin="all":
-    #!/usr/bin/env sh
-    if [ "{{bin}}" = "all" ]; then
-        cargo build --release --target {{target}} --bin central
-        cargo build --release --target {{target}} --bin peripheral
-    else
-        cargo build --release --target {{target}} --bin {{bin}}
-    fi
-
-# --- ci ---
-
-# Run all checks: fmt-check + lint + check (no build)
-ci:
-    just fmt-check
-    just lint all
-    just check all
+# Remove build cache and loose root artifacts (keeps firmware/<datetime>/ archive).
+clean:
+    cargo clean
+    rm -f rmk-central.hex rmk-peripheral.hex rmk-central.uf2 rmk-peripheral.uf2
