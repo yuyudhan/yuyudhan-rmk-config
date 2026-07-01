@@ -62,12 +62,14 @@ just check both       # fast compile-only sanity check (left | right | both)
 just docs svg         # render config/keyboard.toml -> yuyudhan-1_keymap.svg
 just docs html        # render config/keyboard.toml -> yuyudhan-1-viewer.html
 just expand left      # macro-expand the keymap to confirm it compiled in (needs cargo-expand)
-just clean            # wipe build cache + loose root .hex/.uf2 (keeps local firmware/ archive)
+just clean            # wipe Rust cache + build/ staging (keeps local firmware/ archive)
 ```
 
-`just build <target>` runs the `cargo make` chain (objcopy → hex → uf2), writes the UF2(s) to
-the repo root, and archives them plus a config + keymap-visual snapshot into a local
-`firmware/<datetime>/` directory (gitignored) so you can always re-flash an older build.
+`just build <target>` runs the `cargo make` chain (compile → objcopy → hex → uf2), which writes all
+intermediates into a gitignored `build/` staging dir — never the repo root. It then moves the
+finished `.uf2`(s) into a local `firmware/<datetime>/` directory (gitignored), alongside a snapshot
+of the config and keymap visuals. `just flash` pulls the newest matching `.uf2` from there
+automatically; `just clean` wipes `build/` and the Rust cache but keeps the `firmware/` archive.
 
 ## Flash
 

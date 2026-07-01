@@ -1,14 +1,11 @@
 # Rust build cache
 /target
 
-# Intermediate objcopy output (regenerated every build)
-/rmk-central.hex
-/rmk-peripheral.hex
+# Build staging — objcopy/hex-to-uf2 write .hex + .uf2 here; `just build` then
+# moves the final .uf2(s) into firmware/<datetime>/. Throwaway, never committed.
+/build/
 
-# Built firmware — never committed. UF2s at repo root and the timestamped
-# firmware/<datetime>/ snapshots are local build outputs; regenerate with `just build`.
-/rmk-central.uf2
-/rmk-peripheral.uf2
+# Built firmware snapshots — local keepsakes, regenerate with `just build`.
 /firmware/
 
 # Python bytecode (keymap docs generator)
@@ -17,6 +14,6 @@ scripts/__pycache__/
 # macOS
 .DS_Store
 
-# Generated keymap documentation (regenerate with: just docs)
-/*.svg
-/*.html
+# NOTE: yuyudhan-1_keymap.svg and yuyudhan-1-viewer.html are intentionally NOT
+# ignored — they are the rendered keymap documentation (tracked in git, like the
+# ZMK repo's committed keymap image). Regenerate with `just docs svg|html`.
