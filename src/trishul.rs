@@ -111,8 +111,6 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
         self.tick = self.tick.wrapping_add(1);
 
         let fill_on  = PrimitiveStyle::with_fill(BinaryColor::On);
-        let fill_off = PrimitiveStyle::with_fill(BinaryColor::Off);
-        let small    = MonoTextStyle::new(&FONT_5X8,  BinaryColor::On);
         let small_inv= MonoTextStyle::new(&FONT_5X8,  BinaryColor::Off);
         let big      = MonoTextStyle::new(&FONT_9X15, BinaryColor::On);
 
@@ -224,7 +222,7 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
                 let _ = write!(bat_num, "{}", pct);
             }
             BatteryStatus::Available { level: None, .. } => {
-                // Draw a question mark inside the gauge.
+                // Level reading unavailable — show "--" as the number.
                 let _ = write!(bat_num, "--");
             }
             BatteryStatus::Unavailable => {
@@ -241,10 +239,6 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
                 .draw(display)
                 .ok();
         }
-
-        // Clear any pixels the fill/number drew outside the gauge nub region.
-        // (nub at x 30-31: safe — battery number worst-case "100" ends at x 27+9=28 ✓)
-        let _ = fill_off; // suppress unused-variable warning; fill_off is defensive only
     }
 }
 
