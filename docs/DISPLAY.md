@@ -97,64 +97,115 @@ Profile is 0-indexed, matching the `User0`–`User3` profile-select keys in the 
 
 ## RIGHT half (peripheral) — `src/trishul.rs` → `TrishulRenderer`
 
-### Layout — full 32 px, Trishul centred with flanking zones
+### Orientation
+
+The SSD1306 is mounted **portrait** — the short (32 px) edge faces the user; the long
+(128 px) edge points away. `rotation = 90` in `config/keyboard.toml` swaps the DrawTarget
+to 32 wide × 128 tall; y = 0 is the far end, y = 127 is closest to the user.
+If content renders upside-down on hardware, change `rotation = 90` → `rotation = 270`.
+
+### Band map (portrait, y = 0 at far end)
 
 ```
-x:   0         48  52        76  79      92      128
-     ├─LAYER────┤sp├──TRISHUL─┤sp├────────┼─BAT%──┤
-     └CAPS(24-31)┘                        (right-aligned)
+y:    0                    32
+      ┌──────────────────────┐  ← far from user
+   2  │  OM glyph (30×24)    │
+  25  ├──────────────────────┤
+  26  │  (gap)               │
+  30  ├──────────────────────┤
+      │  Trishul (28×48)     │
+  77  ├──────────────────────┤
+  78  │  (gap)               │
+  80  ├──────────────────────┤
+      │  Equalizer bars (5)  │
+      │  or CAPS badge       │
+ 100  │  or NO-LINK blink    │
+ 104  ├──────────────────────┤
+      │  Battery gauge       │
+ 112  ├──────────────────────┤
+      │  Battery number      │
+ 127  └──────────────────────┘  ← nearest to user
 ```
-
-The Trishul logo is 24 px wide, centred at x=52 (pixels 52–75). Everything else clears it:
-- **Left zone** (x=0, y=9): active **layer name** when the split link is up; `----` when it's down (a real name doubles as the link-up cue). Max shown name "MEDIA"/"MOUSE" = 5×9 = x 0–44; logo starts x=52 → 8 px gap. `DISPOFF` (layer 7) is never drawn — that layer blanks the screen.
-- **Battery %** (right-aligned, y=9): rightmost char ends at x=128; "100%" starts at x=92, logo ends at x=75 → 17 px gap.
-- **CAPS badge** (rows 24–31, x 0–21): inverted 22×8 box with "CAPS" in `FONT_5X8`, drawn only while Caps Lock is on. Below the layer name (which ends at row 23) and left of the Trishul base (x≥52).
-- **Spark marks** (flank columns x=48 and x=79): small 5-px plus shapes that light up on each fresh right-hand keypress and rotate by animation frame, giving an orbiting twinkle around the Trishul. Purely event-driven — the display already redraws on every `KeyboardEvent`, so there is **no `render_interval`** and no idle-battery cost. Count scales with WPM (2 at rest … 8 at ≥240 wpm).
 
 ### Field map
 
-| Region | Source field | Font | Position |
-|--------|-------------|------|----------|
-| Layer name / link | `ctx.central_connected` + `ctx.layer` → `LAYER_NAMES[n]` | `FONT_9X15` | x=0, y=9, `Baseline::Top` |
-| Trishul logo | constant bitmap | page-format | x=52, y=0 (full 32 px height) |
-| Battery % | `*ctx.battery` | `FONT_9X15` | right-aligned, y=9; advance 9 px/char |
-| CAPS badge | `ctx.caps_lock` | `FONT_5X8` (inverted) | box (0,24) size 22×8; text (1,24) |
-| Spark | `ctx.key_press_latch` + `ctx.wpm`, gated on `ctx.central_connected` | pixels | flank columns x=48 / x=79, rows 4–28 |
+| Region | Source | Font / draw | Position (portrait) |
+|--------|--------|-------------|---------------------|
+| Om glyph | `OM` bitmap | page-format | x=1, y=2 (30×24 px, 3 pages) |
+| Bindu halo | `tick%8 < 4` | `Circle` stroke-1 | centre (18,3), r=7 |
+| Trishul | `TRISHUL` bitmap | page-format | x=2, y=30 (28×48 px, 6 pages) |
+| Shaft pulse | `key_press_latch` + `central_connected` | filled rect 6×3 | x=13, y=70–52 rising, 6 steps |
+| Equalizer bars | `tick`, `wpm`, `central_connected` | 5 filled rects 4 wide | x 2/8/14/20/26, baseline y=100 |
+| CAPS badge | `caps_lock && central_connected` | `FONT_5X8` inverted | box (5,80) 22×8 |
+| NO-LINK | `!central_connected`, `tick%2==0` | `FONT_5X8` inverted | box (4,84) 24×20 |
+| Battery gauge | `*ctx.battery` | stroke-1 rect + fill | outline (2,104) 28×9; nub (30,107) 2×3 |
+| Battery number | `*ctx.battery` | `FONT_9X15` | centred x=(32-w)/2, y=113 |
 
-Layer/battery text at y=9 with a 15 px tall font occupies rows 9–23, visually centred in the top 32 px.
+### Bitmaps
 
-### Pixel mockups
+**OM (30×24)** — rasterised from `Kohinoor.ttc` (index 0), U+0950, 400 px render,
+`ImageFilter.MaxFilter(5)`, LANCZOS thumbnail to 30 px, threshold 90. Verified by
+round-trip ASCII preview. Regeneration script in the `OM` constant doc comment in
+`src/trishul.rs`. Hardware gate: if ॐ reads poorly on the physical panel, tweak the
+threshold (60–110) and re-embed; if still muddy, remove the `OM` + bindu blocks and
+move the Trishul to y=8.
 
-**Linked, NAV layer, 92% battery, idle (no spark):**
+**TRISHUL (28×48)** — constructed parametrically via Python `hspan` calls (three barbed
+arrowheads, inward quarter-ellipse curves, crossbar, shaft, damaru diamond, pommel).
+Regeneration: rerun the `hspan` block from the planning session and re-pack.
+
+### Animation
+
+| Effect | Trigger | Rate |
+|--------|---------|------|
+| Bindu halo on/off | `tick % 8 < 4` | ~3.2 s cycle idle |
+| Equalizer bars swell | `WAVE[tick+PHASE[i]]` + WPM | 400 ms idle; ~30 fps typing |
+| Shaft energy pulse | `key_press_latch` | per keypress, 6-step decay |
+| Low-battery blink | `pct < 20 && tick%2==0` | ~800 ms |
+| NO-LINK blink | `!central_connected && tick%2==0` | ~800 ms |
+
+`render_interval = 400` ms in `[split.peripheral.display]` drives idle ticks (2.5 fps).
+The render loop is gated on `!sleeping` (zero cost while sleeping).
+Tune: lower to 120–160 ms for smoother idle bars; raise to 800 ms to save battery.
+
+### Pixel mockups (portrait, narrow dimension shown horizontally)
+
+**Linked, 92% battery, idle:**
 ```
-┌──────────────────────────────────┐
-│NAV        ╔╗ ╔╗ ╔╗         92%  │  ← layer name replaces old "LINK"
-│           ╚╩═╩═╩╝               │
-└──────────────────────────────────┘
+┌────────┐  ← far from user (y=0)
+│  OM ॐ  │  rows 2-25
+│ TRISHUL│  rows 30-73
+│ ▃▅▇▅▃  │  rows 80-100 (equalizer)
+│[======]│  rows 104-112 (gauge full)
+│   92   │  rows 113-127 (number)
+└────────┘  ← nearest (y=127)
 ```
 
-**Linked, BASE layer, typing on the right hand (sparks orbiting), Caps Lock on:**
+**Linked, typing (bars dancing), Caps Lock on:**
 ```
-┌──────────────────────────────────┐
-│BASE      · ╔╗ ╔╗ ╔╗ ·      88%  │  ← "·" = spark marks in flank columns
-│CAPS       ╚╩═╩═╩╝  ·             │  ← inverted CAPS badge bottom-left
-└──────────────────────────────────┘
+┌────────┐
+│  OM ॐ  │
+│ TRISHUL│  + shaft pulse bulge rising
+│ CAPS   │  rows 80-88 (CAPS badge overlaid)
+│ ▂▆▅▇▂  │  rows below CAPS
+│[=====] │
+│   88   │
+└────────┘
 ```
 
 **Split link down, 47% battery:**
 ```
-┌──────────────────────────────────┐
-│----       ╔╗ ╔╗ ╔╗         47%  │  ← "----" = central not linked
-│           ╚╩═╩═╩╝               │
-└──────────────────────────────────┘
+┌────────┐
+│  OM ॐ  │
+│ TRISHUL│
+│ NO     │  blinking inverted badge
+│ LINK   │
+│[====]  │  47% fill
+│   47   │
+└────────┘
 ```
 
-**Sleeping / DISPOFF layer (7):**
-```
-┌──────────────────────────────────┐
-│                                  │  ← display cleared
-└──────────────────────────────────┘
-```
+**Sleeping / DISPOFF layer (7):** display cleared, nothing drawn.
 
 ---
 
@@ -164,8 +215,9 @@ Layer/battery text at y=9 with a 15 px tall font occupies rows 9–23, visually 
 - Layer name max width: "MEDIA"/"MOUSE" = 5 chars × 9 px = 45 px (x 0–44). Battery min x: `128 - 4*9 = 92`. Gap = 47 px. ✓ No overlap.
 - Modifiers max extent: x 0–44 (4th cell starts at 36, glyph ends at 44). Status min x: `128 - 9*6 = 74`. Gap = 29 px. ✓ No overlap.
 
-**RIGHT (trishul.rs):**
-- Layer name (or "----"): max "MEDIA"/"MOUSE" = 5 chars × 9 px = x 0–44. Logo starts x=52. Gap = 8 px. ✓
-- Battery "100%": 4 chars × 9 px = 36 px → x=92 to x=128. Logo ends at x=75. Gap = 17 px. ✓
-- Spark columns x=48 (plus reaches x 47–49) and x=79 (x 78–80): between layer text (≤44) and logo (≥52), and between logo (≤75) and battery (≥92). ✓
-- CAPS badge rows 24–31, x 0–21: below layer text (≤ row 23), left of logo base (x≥52). ✓
+**RIGHT (trishul.rs, portrait 32×128):**
+- Om x 1–30; Trishul x 2–29; bars x 2–29; gauge x 2–31 (nub 30–31). Nothing exceeds x 31. ✓
+- Battery number "100" = 3 chars × 9 px = 27 px, x = (32-27)/2 = 2 → ends x 28. ✓
+- Shaft pulse x 13–18; Trishul shaft at x 15–16 (intentional overlap — bulge overlays shaft). ✓
+- NO-LINK badge x 4–27, y 84–103; replaces bars entirely — no coexistence needed. ✓
+- CAPS badge x 5–26, y 80–87; drawn over bars (inverted box, bars underneath are obscured deliberately). ✓
