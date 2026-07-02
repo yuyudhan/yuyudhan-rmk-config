@@ -1,0 +1,117 @@
+--- /Users/yuyudhan/.cargo/git/checkouts/rmk-cd9707f7f2031ce2/b982049/rmk/src/ble/mod.rs	2026-07-01 14:28:41
++++ vendor/rmk/rmk/src/ble/mod.rs	2026-07-02 14:17:57
+@@ -1,6 +1,6 @@
+ use core::sync::atomic::AtomicBool;
+ 
+-use bt_hci::cmd::le::{LeReadLocalSupportedFeatures, LeSetPhy};
++use bt_hci::cmd::le::{LeAddDeviceToFilterAcceptList, LeClearFilterAcceptList, LeReadLocalSupportedFeatures, LeSetPhy};
+ use bt_hci::controller::{ControllerCmdAsync, ControllerCmdSync};
+ use embassy_futures::join::join;
+ use embassy_futures::select::{Either, Either3, select, select3};
+@@ -75,7 +75,11 @@
+ pub struct BleTransport<'b, 's, C>
+ where
+     's: 'b,
+-    C: Controller + ControllerCmdAsync<LeSetPhy> + ControllerCmdSync<LeReadLocalSupportedFeatures>,
++    C: Controller
++        + ControllerCmdAsync<LeSetPhy>
++        + ControllerCmdSync<LeReadLocalSupportedFeatures>
++        + ControllerCmdSync<LeClearFilterAcceptList>
++        + ControllerCmdSync<LeAddDeviceToFilterAcceptList>,
+ {
+     stack: &'b Stack<'s, C, DefaultPacketPool>,
+     server: Server<'static>,
+@@ -87,7 +91,11 @@
+ impl<'b, 's, C> BleTransport<'b, 's, C>
+ where
+     's: 'b,
+-    C: Controller + ControllerCmdAsync<LeSetPhy> + ControllerCmdSync<LeReadLocalSupportedFeatures>,
++    C: Controller
++        + ControllerCmdAsync<LeSetPhy>
++        + ControllerCmdSync<LeReadLocalSupportedFeatures>
++        + ControllerCmdSync<LeClearFilterAcceptList>
++        + ControllerCmdSync<LeAddDeviceToFilterAcceptList>,
+ {
+     pub async fn new(stack: &'b Stack<'s, C, DefaultPacketPool>, rmk_config: RmkConfig<'static>) -> Self {
+         #[cfg(feature = "_nrf_ble")]
+@@ -141,7 +149,11 @@
+ impl<'b, 's, C> Runnable for BleTransport<'b, 's, C>
+ where
+     's: 'b,
+-    C: Controller + ControllerCmdAsync<LeSetPhy> + ControllerCmdSync<LeReadLocalSupportedFeatures>,
++    C: Controller
++        + ControllerCmdAsync<LeSetPhy>
++        + ControllerCmdSync<LeReadLocalSupportedFeatures>
++        + ControllerCmdSync<LeClearFilterAcceptList>
++        + ControllerCmdSync<LeAddDeviceToFilterAcceptList>,
+ {
+     async fn run(&mut self) -> ! {
+         // Load the preferred connection from storage
+@@ -163,8 +175,20 @@
+ 
+         let connection_loop = async {
+             loop {
++                // YUYUDHAN PATCH (whitelist advertising): when the active profile has a
++                // bond whose identity carries an IRK, advertise filtered to that peer so
++                // no other bonded host can steal the connection slot. Profiles without a
++                // bond (or without an IRK the controller could resolve) advertise open.
++                #[cfg(feature = "storage")]
++                let peer: Option<Address> = profile_manager
++                    .active_bond_info()
++                    .filter(|p| p.info.identity.irk.is_some())
++                    .map(|p| p.info.identity.addr);
++                #[cfg(not(feature = "storage"))]
++                let peer: Option<Address> = None;
++
+                 match select(
+-                    advertise(product_name, &mut peripheral, server),
++                    advertise(product_name, &mut peripheral, server, peer),
+                     profile_manager.update_profile(),
+                 )
+                 .await
+@@ -525,11 +549,15 @@
+ }
+ 
+ /// Create an advertiser to use to connect to a BLE Central, and wait for it to connect.
+-async fn advertise<'a, 'b, C: Controller>(
++async fn advertise<'a, 'b, C>(
+     name: &'a str,
+     peripheral: &mut Peripheral<'a, C, DefaultPacketPool>,
+     server: &'b Server<'_>,
+-) -> Result<GattConnection<'a, 'b, DefaultPacketPool>, BleHostError<C::Error>> {
++    peer: Option<Address>,
++) -> Result<GattConnection<'a, 'b, DefaultPacketPool>, BleHostError<C::Error>>
++where
++    C: Controller + ControllerCmdSync<LeClearFilterAcceptList> + ControllerCmdSync<LeAddDeviceToFilterAcceptList>,
++{
+     // Wait for 10ms to ensure the USB is checked
+     embassy_time::Timer::after_millis(10).await;
+     let mut advertiser_data = [0; 31];
+@@ -546,15 +574,27 @@
+         &mut advertiser_data[..],
+     )?;
+ 
++    // YUYUDHAN PATCH (whitelist advertising): a bonded profile advertises filtered
++    // to its peer only (invisible + unconnectable for every other host); an empty
++    // profile advertises unfiltered so new hosts can pair.
+     let advertise_config = AdvertisementParameters {
+         primary_phy: PhyKind::Le2M,
+         secondary_phy: PhyKind::Le2M,
+         tx_power: TxPower::Plus8dBm,
+         interval_min: Duration::from_millis(200),
+         interval_max: Duration::from_millis(200),
++        filter_policy: if peer.is_some() {
++            AdvFilterPolicy::FilterConnAndScan
++        } else {
++            AdvFilterPolicy::Unfiltered
++        },
+         ..Default::default()
+     };
+ 
++    // Load the peer into the controller's filter accept list (empty slice clears it).
++    // Must happen before advertising starts.
++    peripheral.set_filter_accept_list(peer.as_slice()).await?;
++
+     info!("[adv] advertising");
+     set_ble_state(BleState::Advertising);
+     let advertiser = peripheral
