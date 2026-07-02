@@ -51,7 +51,7 @@ with different settings. No earlier release or published crate version supports 
 
 **`rmkit init` / published 0.8.x crate are deliberately NOT used.** The published crate on
 crates.io/docs.rs was failing at build time at the time of porting, and the per-profile
-`enable_flow_tap` feature was not yet published. The `rmk` dependency is pinned directly to git:
+`enable_flow_tap` feature was not yet published. The `rmk` dependency is pinned to git:
 
 ```toml
 rmk = { git = "https://github.com/HaoboGu/rmk", rev = "b98204928e9a8532064ce99add1f6c4c554e08c9", features = [
@@ -62,6 +62,14 @@ rmk = { git = "https://github.com/HaoboGu/rmk", rev = "b98204928e9a8532064ce99ad
     "ssd1306",
 ] }
 ```
+
+**…but the git dep is OVERRIDDEN by a vendored, locally patched copy.** The root `Cargo.toml`
+carries a `[patch."https://github.com/HaoboGu/rmk"]` block pointing `rmk` at `vendor/rmk/rmk`
+(pristine b9820492 plus the per-profile **whitelist-advertising** patch — a bonded BLE profile
+advertises filtered to its own host only, so a second bonded computer in range cannot steal the
+connection during a profile switch; see `vendor/rmk/YUYUDHAN_PATCH.md` and `docs/BLUETOOTH.md`).
+Bumping the git rev or deleting `vendor/` silently drops that BLE fix — reapply
+`vendor/rmk/YUYUDHAN_PATCH.patch` onto any new vendored rev instead.
 
 ---
 
@@ -435,6 +443,15 @@ component. Run `just setup` after step 4 to install the embedded-specific parts 
        "ssd1306",
    ] }
    ```
+
+   Then restore the vendored override: keep the repo's `vendor/rmk/` tree and the
+   `[patch."https://github.com/HaoboGu/rmk"]` block at the bottom of `Cargo.toml` — the clean
+   build compiles the vendored tree (with the whitelist-advertising patch,
+   `vendor/rmk/YUYUDHAN_PATCH.md`), NOT the upstream git rev alone. When re-vendoring from a
+   fresh RMK checkout, also copy the RMK repo-root `README.md` to `vendor/rmk/README.md`:
+   `vendor/rmk/rmk/README.md` is a symlink to `../README.md`, and both the crate's
+   `readme = "../README.md"` field and `lib.rs`'s `#![doc = include_str!("../README.md")]`
+   fail the build if the target is missing.
 
    Keep all `nrf-sdc`, `nrf-mpsl`, embassy, and cortex-m deps exactly as copied — they are
    version-coherent with this RMK rev. Remove the `readme = "../../README.md"` line (the file
