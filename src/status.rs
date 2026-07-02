@@ -1,30 +1,29 @@
-//! Custom central (left-half) OLED renderer — 128×32 SSD1306.
+//! Custom central (left-half) OLED renderer — 128×32 SSD1306, mounted **portrait**
+//! (short/32 px edge faces the user). `rotation = 90` in keyboard.toml makes the
+//! DrawTarget 32 wide × 128 tall; all coordinates below are in that portrait frame.
 //!
-//! Two 16 px bands:
+//! Band map (y = 0 at the far end from the user, y = 127 nearest the user):
 //!
-//!  ┌──────────────────────────────────────┐
-//!  │  LAYER NAME                  BAT%    │  y 0–15  FONT_9X15_BOLD
-//!  │  S  C  A  G     W##  [USB]   P#      │  y 16–31
-//!  └──────────────────────────────────────┘
+//!   rows   2-25   OM glyph (Devanagari ॐ, 30×24 px, static — event-driven only)
+//!   rows  27-44   Layer name (adaptive font; inverted box when not BASE)
+//!   rows  48-57   WPM  "W{n}" FONT_6X10
+//!   rows  61-75   BLE profile "P{n}" FONT_9X15_BOLD (centred)
+//!   rows  77-84   BLE state "~" / "USB" FONT_5X8 (blank when connected)
+//!   rows  87-95   Battery gauge (outline + proportional fill; blinks at <20%)
+//!   rows  98-112  Battery number FONT_9X15_BOLD (centred; no "%" — gauge supplies it)
+//!   rows 113-127  breathing room
 //!
-//! Bottom-right "P#" — the active BLE profile number — is always rendered in
-//! FONT_9X15_BOLD at a fixed x=110 regardless of connection state.  It is
-//! ALWAYS visible so the user can always tell which profile is selected:
+//! No SCAG modifier display — removed per user request.
+//! No `render_interval` — all draws are event-driven (layer/BLE/WPM/battery changes),
+//! so idle battery cost is zero.
 //!
-//!   P0 … P3     — BLE connected on that profile   (state indicator absent)
-//!   ~ P0 … P3   — BLE advertising/searching       (tiny "~" left of P#)
-//!   USB P0 … P3 — wired USB mode, profile ready   (tiny "USB" left of P#)
-//!
-//! This makes the profile number visible even when flashing/testing over USB.
-//!
-//! Layer names live in `src/layer_names.rs` (shared with the right half) and must
-//! match `config/keyboard.toml` [[layer]] order. Update that module in lockstep.
-//! See docs/DISPLAY.md for pixel mockups and field-map tables.
+//! Rotation contingency: if content appears upside-down on hardware, change
+//! `rotation = 90` → `rotation = 270` in config/keyboard.toml — layout unchanged.
 
 use core::fmt::Write as _;
 
 use embedded_graphics::mono_font::MonoTextStyle;
-use embedded_graphics::mono_font::ascii::{FONT_6X10, FONT_9X15_BOLD};
+use embedded_graphics::mono_font::ascii::{FONT_5X8, FONT_6X10, FONT_9X15_BOLD};
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
@@ -34,20 +33,10 @@ use rmk::heapless::String;
 use rmk::types::battery::BatteryStatus;
 use rmk::types::ble::BleState;
 use crate::layer_names::{DISPLAY_OFF_LAYER, LAYER_NAMES};
+use crate::bitmaps::{OM, draw_page_format_frame};
 
-/// FONT_9X15_BOLD: character advance = 9 px.
-const ADV_BIG: i32 = 9;
-/// FONT_6X10: character advance = 6 px.
-const ADV_SM: i32 = 6;
-
-/// x position where the profile "P#" label starts (right edge = 128).
-/// "P3" = 2 chars × 9 px = 18 px → starts at 110.  Always fixed so the eye knows where to look.
-const PROFILE_X: i32 = 110;
-
-/// Right edge for the state label ("USB" / "~"), 3 px left of PROFILE_X.
-const STATE_RIGHT: i32 = PROFILE_X - 3;
-
-/// Left-half status renderer for a 128×32 SSD1306.
+/// Central (left-half) OLED renderer — portrait 32×128 canvas.
+/// Stateless: no animation tick needed; all redraws are event-driven.
 #[derive(Default)]
 pub struct StatusRenderer;
 
@@ -61,16 +50,21 @@ impl DisplayRenderer<BinaryColor> for StatusRenderer {
             return;
         }
 
-        let big     = MonoTextStyle::new(&FONT_9X15_BOLD, BinaryColor::On);
-        let big_inv = MonoTextStyle::new(&FONT_9X15_BOLD, BinaryColor::Off);
-        let small   = MonoTextStyle::new(&FONT_6X10,      BinaryColor::On);
-        let fill_on = PrimitiveStyle::with_fill(BinaryColor::On);
+        let fill_on   = PrimitiveStyle::with_fill(BinaryColor::On);
+        let big       = MonoTextStyle::new(&FONT_9X15_BOLD, BinaryColor::On);
+        let big_inv   = MonoTextStyle::new(&FONT_9X15_BOLD, BinaryColor::Off);
+        let medium    = MonoTextStyle::new(&FONT_6X10, BinaryColor::On);
+        let medium_inv= MonoTextStyle::new(&FONT_6X10, BinaryColor::Off);
+        let tiny      = MonoTextStyle::new(&FONT_5X8,  BinaryColor::On);
 
-        // ── TOP BAND (y 0–15) ────────────────────────────────────────────────
-        // Left:  active layer name in large bold font.
-        // Right: battery percentage, right-aligned.
+        // ── 1. OM glyph (rows 2–25) ──────────────────────────────────────────
+        // Static — no animation on the central half (event-driven only, zero idle cost).
+        draw_page_format_frame(display, &OM, 30, 1, 2);
 
-        // Layer name — left-aligned at (0, 0).
+        // ── 2. Layer name (rows 27–44) ────────────────────────────────────────
+        // Font choice: ≤3-char names (NAV, NUM, SYM, FUN) fit FONT_9X15_BOLD in
+        // 32 px (max 27 px); 4-5 char names (BASE, MEDIA, MOUSE) use FONT_6X10
+        // (max 30 px).  Non-BASE layers get an inverted full-width highlight bar.
         let mut layer_buf: String<8> = String::new();
         let layer_str: &str = if (ctx.layer as usize) < LAYER_NAMES.len() {
             LAYER_NAMES[ctx.layer as usize]
@@ -78,102 +72,110 @@ impl DisplayRenderer<BinaryColor> for StatusRenderer {
             let _ = write!(layer_buf, "L{}", ctx.layer);
             &layer_buf
         };
-        Text::with_baseline(layer_str, Point::new(0, 0), big, Baseline::Top)
-            .draw(display)
-            .ok();
 
-        // Battery % — right-aligned, same band.
-        // Clamped so it never overwrites the layer name (shortest gap ≥ 0 enforced by .max()).
-        let mut bat: String<8> = String::new();
-        match *ctx.battery {
-            BatteryStatus::Available { level: Some(pct), .. } => {
-                let _ = write!(bat, "{}%", pct);
-            }
-            BatteryStatus::Available { level: None, .. } => {
-                let _ = write!(bat, "--");
-            }
-            BatteryStatus::Unavailable => {
-                let _ = write!(bat, "?");
-            }
-        }
-        let bat_x = (128 - bat.len() as i32 * ADV_BIG).max(64);
-        Text::with_baseline(&bat, Point::new(bat_x, 0), big, Baseline::Top)
-            .draw(display)
-            .ok();
+        let is_base   = ctx.layer == 0;
+        let use_big   = layer_str.len() <= 3;
+        // char advance: FONT_9X15_BOLD = 9 px, FONT_6X10 = 6 px.
+        let char_adv  = if use_big { 9i32 } else { 6i32 };
+        // Vertical centre of the 18-px band (rows 27–44):
+        //   big  font 15 px → top at 27 + (18-15)/2 = 28.
+        //   medium font 10 px → top at 27 + (18-10)/2 = 31 (rounding up).
+        let text_y    = if use_big { 28i32 } else { 31i32 };
+        let text_x    = ((32 - layer_str.len() as i32 * char_adv) / 2).max(0);
 
-        // ── BOTTOM BAND (y 16–31) ────────────────────────────────────────────
-        //
-        // Fixed pixel layout (128 px wide):
-        //
-        //  x:  0   12  24  36       52          89–107  110–127
-        //      [S] [C] [A] [G]   W{wpm}   [USB|~]   P{n}
-        //       ←— FONT_9X15_BOLD —→  ←FONT_6X10→  ←6X10→  ←9X15_BOLD→
-        //
-        // Clearances (worst case):
-        //   Mods end    : x=44  (cell 3 at x=36, width=9 → 36+9-1=44)
-        //   WPM "W255"  : x=52…75  (4 chars × 6 px)
-        //   State "USB" : x=89…106  (3 chars × 6 px, right-aligned to STATE_RIGHT=107)
-        //   Profile "P3": x=110…127 (2 chars × 9 px, fixed PROFILE_X=110)
-        //   Gaps: mods→wpm 7 px, wpm→state 13 px, state→profile 3 px.  All clear.
-
-        // Modifier cells — S C A G at pitch 12.
-        // Active cell: white fill box, black letter.  Inactive: plain white letter.
-        let m = ctx.modifiers;
-        let mod_active = [
-            m.left_shift()  || m.right_shift(),
-            m.left_ctrl()   || m.right_ctrl(),
-            m.left_alt()    || m.right_alt(),
-            m.left_gui()    || m.right_gui(),
-        ];
-        for (i, &(ch, active)) in [('S', mod_active[0]),
-                                    ('C', mod_active[1]),
-                                    ('A', mod_active[2]),
-                                    ('G', mod_active[3])].iter().enumerate() {
-            let cx = i as i32 * 12;
-            let mut buf: String<2> = String::new();
-            let _ = write!(buf, "{}", ch);
-            if active {
-                Rectangle::new(Point::new(cx, 16), Size::new(10, 15))
-                    .into_styled(fill_on)
-                    .draw(display)
-                    .ok();
-                Text::with_baseline(&buf, Point::new(cx, 17), big_inv, Baseline::Top)
-                    .draw(display)
-                    .ok();
-            } else {
-                Text::with_baseline(&buf, Point::new(cx, 17), big, Baseline::Top)
-                    .draw(display)
-                    .ok();
-            }
+        if !is_base {
+            // Full-width inverted bar covering the layer name band.
+            Rectangle::new(Point::new(0, 27), Size::new(32, 18))
+                .into_styled(fill_on)
+                .draw(display)
+                .ok();
         }
 
-        // WPM — small font, vertically centred in bottom band (y=19 centres 10 px in 16 px).
+        if use_big {
+            Text::with_baseline(layer_str, Point::new(text_x, text_y),
+                                if is_base { big } else { big_inv }, Baseline::Top)
+                .draw(display).ok();
+        } else {
+            Text::with_baseline(layer_str, Point::new(text_x, text_y),
+                                if is_base { medium } else { medium_inv }, Baseline::Top)
+                .draw(display).ok();
+        }
+
+        // ── 3. WPM (rows 48–57) ──────────────────────────────────────────────
+        // "W{n}" in FONT_6X10.  "W200" = 4 chars × 6 = 24 px → x = 4, centred.
         let mut wpm_buf: String<8> = String::new();
         let _ = write!(wpm_buf, "W{}", ctx.wpm);
-        Text::with_baseline(&wpm_buf, Point::new(52, 19), small, Baseline::Top)
+        let wpm_x = ((32 - wpm_buf.len() as i32 * 6) / 2).max(0);
+        Text::with_baseline(&wpm_buf, Point::new(wpm_x, 48), medium, Baseline::Top)
             .draw(display)
             .ok();
 
-        // BT profile — ALWAYS rendered in large bold font at fixed x=110.
-        // "P0" … "P3" (always 2 chars = 18 px).  Never disappears regardless of state.
+        // ── 4. BLE profile (rows 61–75) ──────────────────────────────────────
+        // "P0"–"P3" always visible; FONT_9X15_BOLD (15 px), centred.
+        // 2 chars × 9 px = 18 px → x = (32 - 18) / 2 = 7.
         let mut profile_buf: String<4> = String::new();
         let _ = write!(profile_buf, "P{}", ctx.ble_status.profile);
-        Text::with_baseline(&profile_buf, Point::new(PROFILE_X, 17), big, Baseline::Top)
+        let profile_x = ((32 - profile_buf.len() as i32 * 9) / 2).max(0);
+        Text::with_baseline(&profile_buf, Point::new(profile_x, 61), big, Baseline::Top)
             .draw(display)
             .ok();
 
-        // State indicator — small text to the LEFT of P#, right-aligned to STATE_RIGHT.
-        // BLE connected = no indicator (normal operation; clean display).
-        // Advertising   = "~"   (1 char — keyboard is searching for this profile's host).
-        // USB/Inactive  = "USB" (3 chars — wired mode; profile is memorised and ready).
+        // ── 5. BLE state indicator (rows 77–84) ──────────────────────────────
+        // Blank when connected (normal operation — no noise).
+        // "~"   when advertising (keyboard is searching for the profile's host).
+        // "USB" when inactive/wired (USB mode; profile memorised and ready).
         let state_str: &str = match ctx.ble_status.state {
             BleState::Connected   => "",
             BleState::Advertising => "~",
             BleState::Inactive    => "USB",
         };
         if !state_str.is_empty() {
-            let state_x = STATE_RIGHT - state_str.len() as i32 * ADV_SM;
-            Text::with_baseline(state_str, Point::new(state_x, 19), small, Baseline::Top)
+            // FONT_5X8 advance = 5 px/char.
+            let state_x = ((32 - state_str.len() as i32 * 5) / 2).max(0);
+            Text::with_baseline(state_str, Point::new(state_x, 77), tiny, Baseline::Top)
+                .draw(display)
+                .ok();
+        }
+
+        // ── 6. Battery gauge (rows 87–95) ────────────────────────────────────
+        // Outline 28×9 at (2, 87); nub 2×3 at (30, 90); fill from (4, 89).
+        Rectangle::new(Point::new(2, 87), Size::new(28, 9))
+            .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
+            .draw(display)
+            .ok();
+        Rectangle::new(Point::new(30, 90), Size::new(2, 3))
+            .into_styled(fill_on)
+            .draw(display)
+            .ok();
+
+        let mut bat_num: String<4> = String::new();
+        match *ctx.battery {
+            BatteryStatus::Available { level: Some(pct), .. } => {
+                // Fill width proportional to percentage (max 24 px inside the outline).
+                // No blink here: central has no tick counter (event-driven only).
+                // Low battery (<20%): show fill at all times; the small number is warning enough.
+                let fill_w = (pct as u32 * 24 / 100).max(1);
+                Rectangle::new(Point::new(4, 89), Size::new(fill_w, 5))
+                    .into_styled(fill_on)
+                    .draw(display)
+                    .ok();
+                let _ = write!(bat_num, "{}", pct);
+            }
+            BatteryStatus::Available { level: None, .. } => {
+                // Level reading unavailable — show "--" as the number.
+                let _ = write!(bat_num, "--");
+            }
+            BatteryStatus::Unavailable => {
+                let _ = write!(bat_num, "?");
+            }
+        }
+
+        // ── 7. Battery number (rows 98–112) ──────────────────────────────────
+        // FONT_9X15_BOLD (15 px), centred.  No "%" — gauge provides context;
+        // "100%" (36 px) would overflow the 32 px width.
+        if !bat_num.is_empty() {
+            let bat_x = ((32 - bat_num.len() as i32 * 9) / 2).max(0);
+            Text::with_baseline(&bat_num, Point::new(bat_x, 98), big, Baseline::Top)
                 .draw(display)
                 .ok();
         }

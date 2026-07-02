@@ -8,9 +8,10 @@
 //!              + bindu halo pulse (circle on tick%8, 3.2 s cycle)
 //!   rows  30-73   Trishul (28×48 px, page-format bitmap)
 //!              + shaft energy pulses on right-hand keypress
-//!   rows  80-100  Equalizer bars (5 bars, 400 ms idle swell, WPM-reactive)
-//!              / CAPS inverted badge (overlay when Caps Lock on)
-//!              / NO-LINK blinking badge (when split link is down)
+//!   rows  80-100  4 equalizer bars (x=2/8/14/20, width 5, WPM-reactive) — left area x 0–24
+//!              + ✓ check icon (x=25–31, always on when linked)
+//!              / ✗ cross icon (x=25–31, blinking tick%2 when not linked)
+//!              / CAPS inverted badge (overlay x=2–23, y=80–87 when Caps Lock on)
 //!   rows 104-112  Battery gauge outline + fill (blinks at <20%)
 //!   rows 113-127  Battery number in FONT_9X15 (centred; no "%" — gauge provides context)
 //!
@@ -27,38 +28,13 @@ use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::mono_font::ascii::{FONT_5X8, FONT_9X15};
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::*;
-use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle};
+use embedded_graphics::primitives::{Circle, Line, PrimitiveStyle, Rectangle};
 use embedded_graphics::text::{Baseline, Text};
 use rmk::display::{DisplayRenderer, RenderContext};
 use rmk::heapless::String;
 use rmk::types::battery::BatteryStatus;
 use crate::layer_names::DISPLAY_OFF_LAYER;
-
-// ── Bitmaps ──────────────────────────────────────────────────────────────────
-
-/// Devanagari Om (U+0950), 30 cols × 24 rows (3 SSD1306 pages), page format.
-/// Rasterised from Kohinoor Devanagari (index 0) at 400 px via PIL MaxFilter(5)
-/// + LANCZOS thumbnail to 30 px, threshold 90. Round-tripped byte-exact against
-/// the ASCII preview before embedding. To regenerate:
-///   python3 -c "
-///     from PIL import Image,ImageDraw,ImageFont,ImageFilter
-///     f=ImageFont.truetype('/System/Library/Fonts/Kohinoor.ttc',400,index=0)
-///     img=Image.new('L',(1600,1600),0); d=ImageDraw.Draw(img)
-///     d.text((800,800),'\u0950',font=f,fill=255,anchor='mm')
-///     g=img.crop(img.getbbox()).filter(ImageFilter.MaxFilter(5))
-///     g.thumbnail((30,30),Image.LANCZOS)
-///     out=Image.new('L',(30,30),0); out.paste(g,((30-g.width)//2,(30-g.height)//2))
-///     out=out.point(lambda p:255 if p>=90 else 0)
-///     # --- then pack: data[page*30+col] = OR of (1<<(y%8)) for set pixels in page ---
-///   "
-const OM: [u8; 90] = [
-    // page 0 (rows 0-7)
-    0, 0, 128, 192, 192, 192, 192, 192, 128, 0, 0, 48, 112, 240, 224, 192, 199, 199, 199, 194, 224, 240, 112, 48, 0, 0, 0, 0, 0, 0,
-    // page 1 (rows 8-15)
-    0, 1, 3, 3, 193, 193, 225, 243, 255, 191, 30, 0, 0, 0, 0, 1, 1, 1, 1, 129, 224, 240, 120, 60, 28, 28, 28, 248, 248, 224,
-    // page 2 (rows 16-23)
-    48, 120, 240, 224, 224, 192, 192, 225, 243, 127, 63, 62, 56, 112, 112, 112, 120, 60, 30, 31, 63, 121, 112, 96, 96, 112, 112, 127, 63, 15,
-];
+use crate::bitmaps::{OM, draw_page_format_frame};
 
 /// Trishul pointing up — three barbed prongs, outer prongs arc down into shaft,
 /// crossbar, damaru diamond mid-shaft, round pommel.
@@ -83,8 +59,8 @@ const TRISHUL: [u8; 168] = [
 
 /// Sine-like wave for equalizer bar heights (0–10 px, 8 steps).
 const WAVE: [u32; 8] = [0, 2, 5, 8, 10, 8, 5, 2];
-/// Per-bar phase offsets so bars move independently.
-const PHASE: [u8; 5] = [0, 5, 2, 7, 4];
+/// Per-bar phase offsets so bars move independently (4 bars).
+const PHASE: [u8; 4] = [0, 5, 2, 7];
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
 
@@ -157,42 +133,54 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
             }
         }
 
-        // ── 5/6/7. Bars / CAPS / NO-LINK (rows 80–100) ───────────────────────
-        if !ctx.central_connected {
-            // NO-LINK blinking badge — replaces bars entirely when split link is down.
-            if self.tick % 2 == 0 {
-                Rectangle::new(Point::new(4, 84), Size::new(24, 20))
-                    .into_styled(fill_on)
-                    .draw(display)
-                    .ok();
-                Text::with_baseline("NO",   Point::new(11, 86), small_inv, Baseline::Top).draw(display).ok();
-                Text::with_baseline("LINK", Point::new( 6, 94), small_inv, Baseline::Top).draw(display).ok();
-            }
-        } else {
-            // Equalizer bars — 5 bars, baseline y=100, height 2–20 px.
-            for i in 0usize..5 {
+        // ── 5/6/7. Bars + connection icon / CAPS (rows 80–100) ────────────────
+        //
+        // Right strip x=25–31 always shows the link-state icon:
+        //   ✓ (check, stroke-1) when central_connected
+        //   ✗ (cross, stroke-2, blinking) when not connected
+        //
+        // Left area x=0–24 shows 4 equalizer bars when connected, blank when not.
+        // CAPS badge overlays the bar area (x=2–23, y=80–87) when Caps Lock is on.
+
+        let stroke1 = PrimitiveStyle::with_stroke(BinaryColor::On, 1);
+        let stroke2 = PrimitiveStyle::with_stroke(BinaryColor::On, 2);
+
+        if ctx.central_connected {
+            // ✓ check icon — always on, x=25–31, y=84–93.
+            // Short left arm going down-right; long right arm going up-right.
+            Line::new(Point::new(25, 90), Point::new(27, 93)).into_styled(stroke1).draw(display).ok();
+            Line::new(Point::new(27, 93), Point::new(31, 85)).into_styled(stroke1).draw(display).ok();
+
+            // 4 equalizer bars — x=2,8,14,20 (width 5), baseline y=100, height 2–18 px.
+            for i in 0usize..4 {
                 let h = (2
                     + WAVE[(self.tick.wrapping_add(PHASE[i]) % 8) as usize]
                     + (ctx.wpm as u32 / 30).min(8))
-                .min(20);
+                .min(18);
                 Rectangle::new(
                     Point::new(2 + i as i32 * 6, 100 - h as i32),
-                    Size::new(4, h),
+                    Size::new(5, h),
                 )
                 .into_styled(fill_on)
                 .draw(display)
                 .ok();
             }
 
-            // CAPS badge — inverted 22×8 box overlaid on the bar region.
+            // CAPS badge — inverted 22×8 box overlaid on the bar area.
             if ctx.caps_lock {
-                Rectangle::new(Point::new(5, 80), Size::new(22, 8))
+                Rectangle::new(Point::new(2, 80), Size::new(22, 8))
                     .into_styled(fill_on)
                     .draw(display)
                     .ok();
-                Text::with_baseline("CAPS", Point::new(6, 80), small_inv, Baseline::Top)
+                Text::with_baseline("CAPS", Point::new(3, 80), small_inv, Baseline::Top)
                     .draw(display)
                     .ok();
+            }
+        } else {
+            // ✗ cross icon (blinking) — x=25–31, y=84–93.
+            if self.tick % 2 == 0 {
+                Line::new(Point::new(25, 84), Point::new(31, 93)).into_styled(stroke2).draw(display).ok();
+                Line::new(Point::new(31, 84), Point::new(25, 93)).into_styled(stroke2).draw(display).ok();
             }
         }
 
@@ -242,31 +230,3 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
     }
 }
 
-/// Draw an SSD1306 page-format bitmap onto an embedded-graphics DrawTarget.
-/// `data[page * cols + col]`, bit `b` → pixel at (col + offset_x, page*8 + b + offset_y).
-/// LSB (bit 0) = top row of the page.
-/// Copied verbatim from rmk `display/renderers/logo.rs` (private there).
-fn draw_page_format_frame<D: DrawTarget<Color = BinaryColor>>(
-    display: &mut D,
-    data: &[u8],
-    cols: usize,
-    offset_x: i32,
-    offset_y: i32,
-) {
-    let pages = data.len() / cols;
-    for page in 0..pages {
-        for col in 0..cols {
-            let byte = data[page * cols + col];
-            if byte == 0 {
-                continue;
-            }
-            for bit in 0..8u32 {
-                if byte & (1 << bit) != 0 {
-                    let x = col as i32 + offset_x;
-                    let y = page as i32 * 8 + bit as i32 + offset_y;
-                    Pixel(Point::new(x, y), BinaryColor::On).draw(display).ok();
-                }
-            }
-        }
-    }
-}
