@@ -1,8 +1,8 @@
-//! Layer names + display-off layer shared by both halves' OLED renderers.
+//! Layer names + display-off layer for OLED renderers.
 //!
 //! MUST match [[layer]] order in config/keyboard.toml (0-indexed).
-//! If that order changes, update here in lockstep — both src/status.rs (left)
-//! and src/trishul.rs (right) read these. See docs/DISPLAY.md.
+//! If that order changes, update here in lockstep — `src/status.rs` (left half)
+//! reads `LAYER_NAMES`; `src/trishul.rs` (right half) reads only `DISPLAY_OFF_LAYER`.
 
 /// Selecting this layer blanks the OLED (MEDIA-layer display toggle).
 pub const DISPLAY_OFF_LAYER: u8 = 7;
