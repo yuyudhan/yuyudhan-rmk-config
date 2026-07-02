@@ -3,6 +3,7 @@
 
 use rmk::macros::rmk_peripheral;
 
+mod bitmaps;
 mod trishul;
 mod layer_names;
 

@@ -3,6 +3,7 @@
 
 use rmk::macros::rmk_central;
 
+mod bitmaps;
 mod status;
 mod layer_names;
 
