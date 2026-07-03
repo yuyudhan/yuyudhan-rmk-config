@@ -1,7 +1,22 @@
-# yuyudhan-1 keymap on Corne split, 2x nice!nano v2 (nRF52840), wireless BLE.
-# Left half = central (USB/BLE to host). Right half = peripheral (BLE to central).
+# ============================================================================
+# yuyudhan-1 — Corne split, 2x nice!nano v2 (nRF52840), wireless BLE.
+#   Left half  = central    (talks USB/BLE to the host, owns the keymap, runs Vial)
+#   Right half = peripheral (talks BLE to the central only)
+#
+# This file IS the firmware's keymap: it is read at COMPILE TIME by the RMK
+# proc-macro (via KEYBOARD_TOML_PATH in .cargo/config.toml). Editing it does
+# nothing until you `just build both` and reflash the CENTRAL (left) half.
+# The peripheral only needs reflashing when firmware code changes.
+#
 # Pin map = ZMK `corne` shield + nice!nano pro_micro mapping (verified 1:1).
+# ============================================================================
 
+# ----------------------------------------------------------------------------
+# Identity: what your computer sees in its USB / Bluetooth device list.
+# vendor_id/product_id are the USB VID:PID pair; hosts and Vial use them to
+# recognize the board. Changing them makes the OS treat it as a *new* device
+# (fresh permissions/settings on some OSes).
+# ----------------------------------------------------------------------------
 [keyboard]
 name = "yuyudhan-1"
 product_name = "yuyudhan-1"
@@ -10,30 +25,86 @@ product_id = 0x7975
 manufacturer = "yuyudhan"
 chip = "nrf52840"
 
+# ----------------------------------------------------------------------------
+# ble_profiles_num — how many host "slots" the keyboard remembers (laptop,
+# desktop, tablet, phone). Each slot stores one Bluetooth bond.
+#
+# It also DEFINES the meaning of the User0..User7 keycodes on the MEDIA layer:
+# with N profiles, User0..User(N-1) select a profile, then UserN = next,
+# User(N+1) = previous, User(N+2) = clear bond, User(N+3) = toggle USB/BLE.
+# MUST stay 4 here, so: User0-3 = BT0-BT3, User4 = next, User5 = prev,
+# User6 = clear-bond (BT_CLR), User7 = output-toggle (OUT_TOG).
+# The MEDIA layer keymap below hard-codes these positions.
+# ----------------------------------------------------------------------------
 [rmk]
-# MUST be 4: makes User6 = clear-bond (BT_CLR) and User7 = output-toggle (OUT_TOG).
 ble_profiles_num = 4
 
+# ----------------------------------------------------------------------------
+# On-chip flash storage, default settings (empty table = enabled, defaults).
+# This is what makes things SURVIVE POWER-OFF: Vial live-remaps, BLE bonds,
+# and the currently selected BLE profile. Without it, every battery swap
+# would forget your pairings and any remapping done in vial.rocks.
+# ----------------------------------------------------------------------------
 [storage]
 
+# ----------------------------------------------------------------------------
+# Bluetooth (host side) + battery reporting.
+#
+# battery_adc_pin = "vddh": the nRF52840 measures its own supply rail through
+# an internal divider — no external wiring. The two adc_divider_* numbers
+# calibrate that reading back to real battery voltage
+# (V_batt = reading * total / measured); 2000/2806 matches the nice!nano v2.
+# The result is the battery % your OS shows for the keyboard.
+#
+# default_tx_power: radio transmit power in dBm. 8 = nRF52840 maximum
+# (same as ZMK CONFIG_BT_CTLR_TX_PWR_PLUS_8). Real-world: fewer dropped
+# keystrokes / more range, at a small battery cost. Lower (0, -4) to trade
+# reliability for battery life.
+#
+# NOTE on pairing: while a profile is BONDED to one computer it is INVISIBLE
+# to every other computer. To move a profile to a new machine: select it
+# (User0-3 on MEDIA), press User6 to clear its bond, then pair fresh.
+# ----------------------------------------------------------------------------
 [ble]
 enabled = true
 battery_adc_pin = "vddh"
 adc_divider_measured = 2000
 adc_divider_total = 2806
-# nRF52840 max tx power (matches ZMK CONFIG_BT_CTLR_TX_PWR_PLUS_8).
 default_tx_power = 8
 
-# Vial: hold the two left thumb keys (electrical (3,3) and (3,4)) to unlock.
+# ----------------------------------------------------------------------------
+# Vial security. Dangerous operations (rewriting the keymap over USB) require
+# proving you physically own the board: while vial.rocks shows the unlock
+# prompt, HOLD the two LEFT THUMB keys — electrical positions (3,3) and (3,4)
+# in the matrix_map below — until the progress bar completes.
+# ----------------------------------------------------------------------------
 [host]
 unlock_keys = [[3, 3], [3, 4]]
 
+# ----------------------------------------------------------------------------
+# Electrical matrix vs. physical keys.
+#
+# The Corne is wired as a 4x12 matrix (48 electrical positions) but this
+# layout uses only 36 keys. matrix_map lists exactly which electrical
+# positions exist AND their reading order — the Nth token in every
+# [[layer]].keys block below binds to the Nth (row,col) entry here.
+#
+# Rows 0-2 = top/home/bottom finger rows; row 3 = thumbs. Columns 0 and 11
+# (outer pinky columns) and the unused thumb positions are simply omitted —
+# this mirrors ZMK's default_transform for a 36-key Corne.
+#
+# The ,L / ,R tag marks which HAND each key belongs to. It exists solely to
+# power `unilateral_tap` in the HRM profile below: the firmware can only
+# treat "next key came from the OTHER hand" as chord evidence if it knows
+# which hand each key is on.
+#
+# layers = 8 reserves 8 keymap layers (0-7, all defined below). More layers
+# = more RAM/flash, so it matches exactly what we use.
+# ----------------------------------------------------------------------------
 [layout]
 rows = 4
 cols = 12
 layers = 8
-# 36 used positions (ZMK default_transform): main cols 1-5 / 6-10, thumb row cols 3-5 / 6-8.
-# <hand> tags (L/R) present for optional unilateral_tap HRM fallback.
 matrix_map = """
 (0,1,L) (0,2,L) (0,3,L) (0,4,L) (0,5,L)   (0,6,R) (0,7,R) (0,8,R) (0,9,R) (0,10,R)
 (1,1,L) (1,2,L) (1,3,L) (1,4,L) (1,5,L)   (1,6,R) (1,7,R) (1,8,R) (1,9,R) (1,10,R)
@@ -41,7 +112,26 @@ matrix_map = """
                 (3,3,L) (3,4,L) (3,5,L)   (3,6,R) (3,7,R) (3,8,R)
 """
 
-# Layer 0 — BASE (QWERTY + GACS home-row mods)
+# ============================================================================
+# KEYMAP — 7-layer Miryoku-style layout (+ layer 7 for display-off).
+# Layers 1-6 activate by HOLDING a thumb key; TAPPING the same key sends its
+# letter/action. Notation used below:
+#
+#   MT(key, mod, PROFILE)  Mod-Tap: tap = key, hold = modifier.
+#                          PROFILE names a [behavior.morse.profiles] entry.
+#   LT(n, key, PROFILE)    Layer-Tap: tap = key, hold = momentary layer n.
+#   WM(key, mods)          key With Modifiers, e.g. WM(C, LGui) = Cmd+C.
+#   SHIFTED(key)           the shifted symbol, e.g. SHIFTED(Kc1) = !
+#   TG(n)                  Toggle layer n on/off (stays until toggled again).
+#   User0..User7           RMK Bluetooth controls — see ble_profiles_num above.
+#   No                     dead key: on THIS layer the position does nothing.
+#   _______                transparent: falls through to the layer below.
+# ============================================================================
+
+# Layer 0 — BASE. QWERTY with GACS home-row mods: resting fingers double as
+# GUI/Alt/Ctrl/Shift (A/S/D/F), mirrored on J/K/L/'. Tap = letter, hold = mod;
+# the feel is tuned by the HRM profile at the bottom of this file.
+# Thumb row (hold): Escape=MEDIA  Space=NAV  Tab=MOUSE | Enter=SYM  Backspace=NUM  Delete=FUN
 [[layer]]
 name = "BASE"
 keys = """
@@ -51,7 +141,10 @@ Z                X                C                V                B           
                                   LT(3, Escape, TL) LT(1, Space, TL) LT(6, Tab, TL)      LT(4, Enter, TL) LT(2, Backspace, TL) LT(5, Delete, TL)
 """
 
-# Layer 1 — NAV (hold SPACE)
+# Layer 1 — NAV (hold SPACE). Vim-style arrows on the right home row (HJKL
+# positions), Home/PgDn/PgUp/End below them, clipboard chords (Cmd-Z/X/C/V,
+# Cmd-Shift-Z) on the top row. Left home row pre-holds plain GACS mods so
+# e.g. Space+LShift+Right selects text word-by-word without leaving the layer.
 [[layer]]
 name = "NAV"
 keys = """
@@ -61,7 +154,9 @@ No   No   No   No   No                        Home      PageDown  PageUp    End 
                No   No   No                   Enter     Backspace Delete
 """
 
-# Layer 2 — NUM (hold BSPC)
+# Layer 2 — NUM (hold BACKSPACE). Columnar numpad on the LEFT hand
+# (789 / 456 / 123, 0 on the thumb) with brackets/symbols on the outer
+# columns. Right home row holds mirror mods so number+modifier chords work.
 [[layer]]
 name = "NUM"
 keys = """
@@ -71,7 +166,11 @@ Grave       Kc1 Kc2 Kc3 Backslash             No No No No No
                 Dot Kc0 Minus                 No No No
 """
 
-# Layer 3 — MEDIA (hold ESC). TG(7) (above output-toggle) blanks both OLEDs.
+# Layer 3 — MEDIA (hold ESCAPE). Volume/brightness/media transport plus all
+# Bluetooth management (see ble_profiles_num for the User* decoding):
+#   User0-3 = select BT profile 0-3      User6 = clear bond of CURRENT profile
+#   User7   = toggle output USB <-> BLE  TG(7) = blank both OLEDs (see layer 7)
+# Top corners: WM(Q, LCtrl|LGui) = lock screen, WM(Q, LShift|LGui) = logout (macOS).
 [[layer]]
 name = "MEDIA"
 keys = """
@@ -81,7 +180,9 @@ No   No   No   No   No                         User7        User0          User1
                No   No   No                    MediaStop    MediaPlayPause AudioMute
 """
 
-# Layer 4 — SYM (hold ENTER)
+# Layer 4 — SYM (hold ENTER). Exactly the NUM layer with SHIFT applied:
+# same finger positions produce the shifted symbol ({ & * ( } etc.), so your
+# muscle memory for numbers and their symbols is identical.
 [[layer]]
 name = "SYM"
 keys = """
@@ -91,7 +192,9 @@ SHIFTED(Grave)       SHIFTED(Kc1) SHIFTED(Kc2) SHIFTED(Kc3) SHIFTED(Backslash)  
                      SHIFTED(Kc9) SHIFTED(Kc0) SHIFTED(Minus)                       No No No
 """
 
-# Layer 5 — FUN (hold DEL)
+# Layer 5 — FUN (hold DELETE). F-keys in the same columnar shape as NUM
+# (F7-F9 / F4-F6 / F1-F3, F10-F12 on the outer column) + PrintScreen /
+# ScrollLock / Pause on the right edge of the left hand.
 [[layer]]
 name = "FUN"
 keys = """
@@ -101,7 +204,9 @@ F10 F1 F2 F3 Pause                              No No No No No
            Menu Space Tab                       No No No
 """
 
-# Layer 6 — MOUSE (hold TAB). ZMK btn order LCLK/MCLK/RCLK -> RMK Btn1/Btn3/Btn2.
+# Layer 6 — MOUSE (hold TAB). Pointer movement on the right home row (same
+# HJKL directions as NAV arrows), scroll wheel below, buttons on the thumbs.
+# ZMK button order LCLK/MCLK/RCLK maps to RMK Btn1/Btn3/Btn2.
 [[layer]]
 name = "MOUSE"
 keys = """
@@ -111,9 +216,10 @@ No   No   No   No   No                           MouseWheelLeft MouseWheelDown M
                No   No   No                      MouseBtn1      MouseBtn3      MouseBtn2
 """
 
-# Layer 7 — DISPOFF (TG(7) from MEDIA). Fully transparent so every key still
-# falls through to the layers below; its only purpose is to signal both OLED
-# renderers (ctx.layer == 7) to blank. Toggle TG(7) again to restore.
+# Layer 7 — DISPOFF (toggled by TG(7) on MEDIA). Fully transparent, so every
+# key still falls through and types normally; its ONLY purpose is to signal
+# both OLED renderers (they check ctx.layer == 7) to blank the screens.
+# Toggle TG(7) again to restore the displays.
 [[layer]]
 name = "DISPOFF"
 keys = """
@@ -123,12 +229,71 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
                 _______ _______ _______         _______ _______ _______
 """
 
-# Home-row mods: flow-tap enabled (prior-idle 150ms) so streak presses are instant taps,
-# permissive-hold + unilateral_tap for intentional chords after a pause.
-# Thumb layer-taps: flow-tap OFF (holds are used mid-streak), permissive-hold.
+# ============================================================================
+# TAP-HOLD ("morse") TUNING — the feel of home-row mods and thumb layer-taps.
+#
+# Every dual-role key needs an answer to: "was that a TAP (letter) or a HOLD
+# (modifier/layer)?" Four knobs decide it; here's each one in real typing
+# terms:
+#
+# hold_timeout = 200ms
+#   The press-and-wait threshold. Press a dual key ALONE and keep it down
+#   past 200ms -> hold (mod/layer). Release sooner -> tap (letter).
+#   Lower = mods fire faster but fast typing misfires more; higher = safer
+#   typing but you must consciously wait longer for a chord.
+#
+# enable_flow_tap + prior_idle_time = 120ms   ("am I mid-word?")
+#   If ANY other key was pressed less than 120ms before a dual key goes
+#   down, the firmware decides TAP instantly — no waiting, no misfire.
+#   This is the main defence against rolls like "ds" firing Ctrl mid-word.
+#   Consequence: to USE a home-row mod you must pause >=120ms first —
+#   which you naturally do before a deliberate shortcut like Ctrl+C.
+#   Tuned for ~87 WPM (~138ms between keystrokes); if you get faster and
+#   mods start firing mid-word, RAISE this. If deliberate chords keep
+#   coming out as letters, you're chording faster than you pause — LOWER it.
+#   NOTE: prior_idle_time is GLOBAL (this top-level table only); profiles
+#   can switch flow-tap on/off but all share this 120ms window.
+#
+# permissive_hold (per-profile below)   ("nested press = intentional chord")
+#   While the dual key is down, if another key is pressed AND RELEASED
+#   before you let go, resolve HOLD immediately — even before 200ms.
+#   Typing "F(down) J(down) J(up) F(up)" quickly = Shift+J. This is what
+#   makes deliberate chords feel instant instead of laggy.
+#
+# unilateral_tap (HRM only)   ("same hand = typing, other hand = chord")
+#   A hold decision is only honoured when the companion key is on the
+#   OPPOSITE hand (that's what the L/R tags in matrix_map feed). Same-hand
+#   sequences like "ds", "as", "lo" always resolve as letters. Cost: you
+#   can't do a same-hand chord like Ctrl(D)+S — use the mirror mod on the
+#   other hand instead (that's why both hands have full GACS).
+#
+# gap_timeout = 200ms
+#   Window for multi-step morse patterns (tap-then-hold, double-tap) on keys
+#   that define them. Pure MT()/LT() keys define only TAP and HOLD, so this
+#   is INERT here.
+#   Letter auto-repeat on dual keys depends on WHEN you press:
+#   - mid-streak (within the 120ms flow-tap window): the letter's press is
+#     sent and held while the key is down -> OS auto-repeat works ("dddd...").
+#   - after a pause (>=120ms idle): holding resolves as mod/layer at 200ms —
+#     no letter repeat. To repeat a home-row letter, keep it inside a streak.
+#
+# Profiles — referenced by name in MT(...)/LT(...) above:
+#
+# HRM (home-row mods): flow-tap ON + permissive-hold + unilateral_tap.
+#   Biased hard toward "it's a letter" — all three guards must agree it was
+#   a chord before a modifier fires.
+#
+# TL (thumb layer-taps): flow-tap OFF, permissive-hold only.
+#   Flow-tap must stay OFF here: you hold Space for NAV *mid-typing-streak*
+#   (type, arrow over, keep typing). With flow-tap on, that hold would be
+#   forced into a literal space. Permissive-hold keeps layers instant:
+#   Space(down) H(down) H(up) = Left arrow well before 200ms.
+#   Per-profile flow-tap override is the reason rmk is pinned/vendored at
+#   b9820492 — do not "simplify" the profiles into one.
+# ============================================================================
 [behavior.morse]
 enable_flow_tap = true
-prior_idle_time = "150ms"
+prior_idle_time = "120ms"
 hold_timeout = "200ms"
 gap_timeout = "200ms"
 
@@ -136,10 +301,26 @@ gap_timeout = "200ms"
 HRM = { enable_flow_tap = true, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 TL  = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 
+# ============================================================================
+# SPLIT — how the two halves relate. The halves talk to each other over BLE;
+# only the central talks to your computer.
+# ============================================================================
 [split]
 connection = "ble"
 
-# Left half = central. cols pro_micro 21,20,19,18,15,14 -> P0_31,P0_29,P0_02,P1_15,P1_13,P1_11
+# ----------------------------------------------------------------------------
+# LEFT half = central. Owns the keymap, hosts Vial, connects to the computer.
+#
+# row_offset/col_offset = 0: this half's 4x6 local matrix occupies columns
+# 0-5 of the full 4x12 matrix.
+#
+# ble_addr: FIXED static random Bluetooth address. The two halves find each
+# other by these hard-coded addresses (no discovery/pairing dance between
+# halves). Must be unique per half; change one and the halves stop talking
+# until both are reflashed with matching firmware.
+#
+# Battery ADC settings repeat here because each half measures its OWN battery.
+# ----------------------------------------------------------------------------
 [split.central]
 rows = 4
 cols = 6
@@ -150,29 +331,48 @@ battery_adc_pin = "vddh"
 adc_divider_measured = 2000
 adc_divider_total = 2806
 
+# Physical wiring of the left half.
+#   matrix_type "normal" = classic row/col diode matrix (vs "direct_pin").
+#   debouncer "fast" = eager per-key debouncer: reports the keypress on the
+#     first clean edge and ignores contact chatter afterwards — lower latency
+#     than the default deferred debouncer. If you ever see doubled letters
+#     from a worn switch, switching back to the default is the fix.
+#   Pins: cols pro_micro 21,20,19,18,15,14 -> P0_31,P0_29,P0_02,P1_15,P1_13,P1_11
+#     (ZMK corne shield mapping, verified 1:1).
 [split.central.matrix]
 matrix_type = "normal"
 debouncer = "fast"
 row_pins = ["P0_22", "P0_24", "P1_00", "P0_11"]
 col_pins = ["P0_31", "P0_29", "P0_02", "P1_15", "P1_13", "P1_11"]
 
-# Central OLED status screen — SSD1306 128×32, mounted portrait (short/32 px
-# edge faces user). rotation=90 gives a 32×128 DrawTarget.
-# No render_interval — all redraws are event-driven (layer/BLE/WPM/battery);
-# zero idle battery cost. If content renders upside-down, use rotation=270.
+# Central OLED status screen — SSD1306 128x32, mounted portrait (short/32px
+# edge faces user). rotation=90 turns it into a 32x128 drawing surface for
+# the custom renderer in src/status.rs. If content renders upside-down on
+# your mount, use rotation=270.
+# No render_interval on purpose: all redraws are event-driven (layer change,
+# BLE state, WPM, battery), so the screen costs zero battery while idle.
 [split.central.display]
 driver = "ssd1306"
 size = "128x32"
 rotation = 90
 renderer = "crate::status::StatusRenderer"
 
+# I2C bus for the central OLED: hardware TWISPI0 peripheral, standard
+# nice!nano display pins (P0.17 = SDA, P0.20 = SCL).
 [split.central.display.protocol.i2c]
 instance = "TWISPI0"
 sda = "P0_17"
 scl = "P0_20"
 
-# Right half = peripheral. col_offset=6; col order REVERSED:
-# pro_micro 14,15,18,19,20,21 -> P1_11,P1_13,P1_15,P0_02,P0_29,P0_31
+# ----------------------------------------------------------------------------
+# RIGHT half = peripheral. Sends its key events to the central over BLE;
+# never talks to the computer directly.
+#
+# col_offset = 6: its local columns 0-5 land in columns 6-11 of the full
+# matrix. Note the col_pins order is REVERSED vs the left half — the right
+# half of a Corne is a mirror image, so pro_micro 14,15,18,19,20,21 ->
+# P1_11,P1_13,P1_15,P0_02,P0_29,P0_31 keeps electrical col 6 at the inner edge.
+# ----------------------------------------------------------------------------
 [[split.peripheral]]
 rows = 4
 cols = 6
@@ -183,17 +383,19 @@ battery_adc_pin = "vddh"
 adc_divider_measured = 2000
 adc_divider_total = 2806
 
+# Physical wiring of the right half — same rows, mirrored columns (see above).
 [split.peripheral.matrix]
 matrix_type = "normal"
 debouncer = "fast"
 row_pins = ["P0_22", "P0_24", "P1_00", "P0_11"]
 col_pins = ["P1_11", "P1_13", "P1_15", "P0_02", "P0_29", "P0_31"]
 
-# Right half (peripheral) OLED status screen — SSD1306 128×32, mounted portrait
-# (short/32px edge faces user). rotation=90 gives a 32×128 DrawTarget.
-# render_interval=400 ms drives the idle animation tick (breathing, equalizer);
-# the render loop gates on !sleeping so there is zero cost while asleep.
-# Tune: lower to 120–160 for smoother bars; raise to 800 to save battery.
+# Right half (peripheral) OLED — SSD1306 128x32, portrait like the left.
+# This one runs the decorative renderer in src/trishul.rs, so unlike the
+# central it needs a timer: render_interval = 400ms drives the idle
+# animation tick (breathing, equalizer). The render loop gates on !sleeping,
+# so there is zero cost while the half is asleep.
+# Tune: lower to 120-160 for smoother bars; raise to 800 to save battery.
 [split.peripheral.display]
 driver = "ssd1306"
 size = "128x32"
@@ -201,6 +403,8 @@ rotation = 90
 renderer = "crate::trishul::TrishulRenderer"
 render_interval = 400
 
+# I2C bus for the peripheral OLED — same pins as the left (each half has its
+# own independent I2C bus and display).
 [split.peripheral.display.protocol.i2c]
 instance = "TWISPI0"
 sda = "P0_17"

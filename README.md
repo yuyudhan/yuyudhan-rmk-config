@@ -33,9 +33,12 @@ One profile, one keymap. Everything lives in `config/keyboard.toml`; there is no
 | 5 FUN | Delete | F1–F12 + PrintScreen/ScrollLock/Pause |
 | 6 MOUSE | Tab | pointer move, scroll wheel, mouse buttons |
 
-**Home-row mods** use the `HRM` morse profile (tap-preferred feel, 200 ms hold, 150 ms
-prior-idle). **Thumb layer-taps** use the `TL` profile (balanced/permissive-hold, 200 ms).
-Edit these in the `[behavior.morse.profiles]` table of `config/keyboard.toml`.
+**Home-row mods** use the `HRM` morse profile (permissive-hold + unilateral-tap + flow-tap,
+200 ms hold, 120 ms prior-idle). **Thumb layer-taps** use the `TL` profile (permissive-hold,
+no flow-tap, 200 ms).
+Edit these in the `[behavior.morse.profiles]` table of `config/keyboard.toml` — every
+setting in that file carries a comment explaining what it does and how it changes
+real-world typing feel, so the TOML itself is the reference documentation.
 
 ### MEDIA-layer Bluetooth keys
 
