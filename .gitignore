@@ -1,5 +1,9 @@
-# Rust build cache
-/target
+# Rust build cache — unanchored: also catches vendor/rmk/rmk/target/
+target/
+
+# Vendored RMK is its own cargo workspace; building inside it generates a lock
+# file that is build noise, not source.
+vendor/rmk/rmk/Cargo.lock
 
 # Build staging — objcopy/hex-to-uf2 write .hex + .uf2 here; `just build` then
 # moves the final .uf2(s) into firmware/<datetime>/. Throwaway, never committed.
