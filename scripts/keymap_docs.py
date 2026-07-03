@@ -44,7 +44,7 @@ KEYCODE_DISPLAY: dict[str, str] = {
     # Navigation / editing
     "Left": "←", "Down": "↓", "Up": "↑", "Right": "→",
     "Home": "Home", "End": "End", "PageUp": "PgUp", "PageDown": "PgDn",
-    "Insert": "Ins", "CapsLock": "Caps", "Enter": "Enter",
+    "Insert": "Ins", "CapsLock": "Caps", "CapsWordToggle": "CapsWd", "Enter": "Enter",
     "Backspace": "Bspc", "Delete": "Del", "Escape": "Esc",
     "Tab": "Tab", "Menu": "Menu", "PrintScreen": "PrtSc",
     "ScrollLock": "ScrLk", "Pause": "Pause", "Space": "Spc",
@@ -111,7 +111,7 @@ LAYER_DESC: dict[str, str] = {
     "NUM":   "hold Bspc — columnar numpad + brackets/symbols on left hand",
     "MEDIA": "hold Esc — volume, brightness, media transport, Bluetooth (BT0–3 / clear / USB-BLE toggle)",
     "SYM":   "hold Enter — programmer symbols on left hand",
-    "FUN":   "hold Del — F1–F12 + PrtSc/ScrLk/Pause",
+    "FUN":   "hold Del — F1–F12 + screenshot ⇧⌘4 (file) / ⌃⇧⌘4 (clipboard) + Caps Word",
     "MOUSE": "hold Tab — pointer move, scroll wheel, mouse buttons",
     "DISPOFF": "TG(7) from MEDIA — blanks both OLED displays; toggle again to restore",
 }
