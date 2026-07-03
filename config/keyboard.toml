@@ -46,6 +46,14 @@ ble_profiles_num = 4
 # would forget your pairings and any remapping done in vial.rocks.
 # ----------------------------------------------------------------------------
 [storage]
+# !!! TEMPORARY WIPE FLAG — REVERT AFTER ONE BOOT !!!
+# clear_storage = true erases ALL storage on EVERY boot: split pairing state,
+# host BLE bonds, Vial remaps, selected profile. Recovery procedure:
+#   1. build both halves with this flag ON, flash BOTH halves
+#   2. power both on once, wait for the halves to link (X -> check mark)
+#   3. DELETE this flag (or set false), rebuild both, reflash BOTH halves
+# If you leave it on, every battery swap forgets all pairings.
+clear_storage = true
 
 # ----------------------------------------------------------------------------
 # Bluetooth (host side) + battery reporting.
