@@ -82,16 +82,28 @@ default_tx_power = 8
 unlock_keys = [[3, 3], [3, 4]]
 
 # ----------------------------------------------------------------------------
-# Electrical matrix vs. physical keys.
+# ELECTRICAL matrix vs. PHYSICAL keys — two views of the same board.
 #
-# The Corne is wired as a 4x12 matrix (48 electrical positions) but this
-# layout uses only 36 keys. matrix_map lists exactly which electrical
-# positions exist AND their reading order — the Nth token in every
+#   Physical (what you see):    3 rows x 12 finger keys  +  3+3 thumb keys
+#   Electrical (how it's wired): 4 rows x 12 cols = 48 scan positions
+#
+# These do NOT conflict. The Corne PCB scans 4 row pins x 6 col pins per
+# half (= 4x12 combined), and the THUMB KEYS ARE ELECTRICAL ROW 3 — they
+# don't get a separate "thumb row", they're wired into the 4th scan row at
+# columns 3-8. So `rows = 4` / `cols = 12` below describe the WIRING and
+# must never be changed to 3; with rows = 3 the thumbs would never scan.
+#
+# matrix_map is the filter from 48 wired positions down to the 36 keys THIS
+# LAYOUT USES: note its shape below — three rows of 10, then one row of 6
+# thumbs. Columns 0 and 11 (the outer pinky columns) are physically present
+# on a 42-key Corne but INTENTIONALLY UNMAPPED here — pressing them does
+# nothing. Thumb columns 0-2 / 9-11 have no switches at all. This mirrors
+# ZMK's 36-key transform. To bring the outer columns to life: add (0,0,L),
+# (1,0,L), (2,0,L), (0,11,R), (1,11,R), (2,11,R) to matrix_map and one token
+# per new key in every [[layer]].keys block.
+#
+# matrix_map also fixes the READING ORDER: the Nth token in every
 # [[layer]].keys block below binds to the Nth (row,col) entry here.
-#
-# Rows 0-2 = top/home/bottom finger rows; row 3 = thumbs. Columns 0 and 11
-# (outer pinky columns) and the unused thumb positions are simply omitted —
-# this mirrors ZMK's default_transform for a 36-key Corne.
 #
 # The ,L / ,R tag marks which HAND each key belongs to. It exists solely to
 # power `unilateral_tap` in the HRM profile below: the firmware can only
@@ -113,19 +125,62 @@ matrix_map = """
 """
 
 # ============================================================================
-# KEYMAP — 7-layer Miryoku-style layout (+ layer 7 for display-off).
+# KEYMAP — 8 layers total, indexed 0-7.
+#   Layers 0-6 = the seven TYPING layers (Miryoku-style: BASE + six hold-layers).
+#   Layer 7    = DISPOFF, not a typing layer: fully transparent, exists only as
+#                a flag the OLED renderers check to blank the screens.
 # Layers 1-6 activate by HOLDING a thumb key; TAPPING the same key sends its
 # letter/action. Notation used below:
 #
-#   MT(key, mod, PROFILE)  Mod-Tap: tap = key, hold = modifier.
-#                          PROFILE names a [behavior.morse.profiles] entry.
-#   LT(n, key, PROFILE)    Layer-Tap: tap = key, hold = momentary layer n.
-#   WM(key, mods)          key With Modifiers, e.g. WM(C, LGui) = Cmd+C.
+#   MT(key, mod, PROFILE) — Mod-Tap: ONE key, TWO meanings, decided by how
+#       long you press it.
+#         quick press+release           -> types `key`
+#         press and KEEP HOLDING, then
+#         press something else          -> acts as held `mod` for the chord
+#       Example: MT(F, LShift, HRM). Tap F -> "f". Hold F + tap J -> "J".
+#       The letter is NEVER sent when it resolves as hold, and the mod is
+#       NEVER sent when it resolves as tap — it's one or the other.
+#       PROFILE names a [behavior.morse.profiles] entry (bottom of file)
+#       that tunes HOW the tap-vs-hold decision is made.
+#   LT(n, key, PROFILE) — Layer-Tap: same tap-vs-hold idea, but hold gives
+#       you LAYER n (only while held) instead of a modifier.
+#       Example: LT(1, Space, TL). Tap -> space. Hold + tap K -> Up arrow
+#       (K on layer 1/NAV). Release the thumb -> back to normal typing.
+#   WM(key, mods) — key With Modifiers: NOT dual-role, no timing, no
+#       decision. The moment you press it, it sends `key` with `mods`
+#       already applied — a canned shortcut on a single key.
+#       Example: WM(C, LGui) = Cmd+C (copy) in one keypress.
+#       Combine mods with |: WM(Z, LGui | LShift) = Cmd+Shift+Z (redo).
+#       Rule of thumb: MT/LT = "this key BECOMES a mod/layer when held";
+#       WM = "this key PRESSES a finished shortcut for me".
 #   SHIFTED(key)           the shifted symbol, e.g. SHIFTED(Kc1) = !
+#   Kc0..Kc9 — the plain DIGIT keys, exactly as if you pressed 1..0 on the
+#       number row of a normal keyboard. "Kc" is just RMK's prefix for
+#       "keycode": a bare `1` wouldn't be a valid name in the keymap, so the
+#       digit keycodes are spelled Kc1, Kc2, ... Kc0.
+#       They are NOT the numpad digits (those would be Kp1..Kp0) — apps and
+#       OS shortcuts treat number-row and numpad keys differently, and these
+#       send the number-row version. Shift applies as usual, which is why
+#       SHIFTED(Kc1) = ! on the SYM layer.
 #   TG(n)                  Toggle layer n on/off (stays until toggled again).
 #   User0..User7           RMK Bluetooth controls — see ble_profiles_num above.
 #   No                     dead key: on THIS layer the position does nothing.
 #   _______                transparent: falls through to the layer below.
+#
+# TERMINOLOGY used throughout this file:
+#   "chord" — two or more keys held AT THE SAME TIME on purpose, the way
+#       you press Ctrl+C: hold one key, tap another while it's down. In
+#       this file "chord" always means you INTENDED the dual-role key as a
+#       hold (mod/layer) plus a companion key. Its opposite is a "roll":
+#       keys overlapping by ACCIDENT during fast normal typing — e.g. "ds"
+#       typed so fast that D is still down when S goes down. Telling
+#       chords from rolls is the entire job of the tap-hold tuning section
+#       at the bottom of this file.
+#   "HRM" — Home-Row Mods: the resting keys A/S/D/F and J/K/L/' double as
+#       GUI/Alt/Ctrl/Shift when HELD and type their letter when TAPPED, so
+#       your fingers never leave the home row to reach a modifier. HRM is
+#       also the NAME of the tuning profile those keys reference (see
+#       [behavior.morse.profiles] below).
 # ============================================================================
 
 # Layer 0 — BASE. QWERTY with GACS home-row mods: resting fingers double as
@@ -157,6 +212,7 @@ No   No   No   No   No                        Home      PageDown  PageUp    End 
 # Layer 2 — NUM (hold BACKSPACE). Columnar numpad on the LEFT hand
 # (789 / 456 / 123, 0 on the thumb) with brackets/symbols on the outer
 # columns. Right home row holds mirror mods so number+modifier chords work.
+# KcN = plain number-row digit N (see legend above), not a numpad key.
 [[layer]]
 name = "NUM"
 keys = """
@@ -193,14 +249,16 @@ SHIFTED(Grave)       SHIFTED(Kc1) SHIFTED(Kc2) SHIFTED(Kc3) SHIFTED(Backslash)  
 """
 
 # Layer 5 — FUN (hold DELETE). F-keys in the same columnar shape as NUM
-# (F7-F9 / F4-F6 / F1-F3, F10-F12 on the outer column) + PrintScreen /
-# ScrollLock / Pause on the right edge of the left hand.
+# (F7-F9 / F4-F6 / F1-F3, F10-F12 on the outer column) + macOS utilities on
+# the right edge of the left hand: region screenshot to file (Cmd+Shift+4),
+# region screenshot to clipboard (Cmd+Ctrl+Shift+4), and Caps Word (caps for
+# the next word only; `-` becomes `_`, space/punctuation or 5s idle ends it).
 [[layer]]
 name = "FUN"
 keys = """
-F12 F7 F8 F9 PrintScreen                       No No No No No
-F11 F4 F5 F6 ScrollLock                         No RShift RCtrl RAlt RGui
-F10 F1 F2 F3 Pause                              No No No No No
+F12 F7 F8 F9 WM(Kc4, LShift | LGui)             No No No No No
+F11 F4 F5 F6 WM(Kc4, LCtrl | LShift | LGui)     No RShift RCtrl RAlt RGui
+F10 F1 F2 F3 CapsWordToggle                     No No No No No
            Menu Space Tab                       No No No
 """
 
