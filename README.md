@@ -30,7 +30,7 @@ One profile, one keymap. Everything lives in `config/keyboard.toml`; there is no
 | 2 NUM | Backspace | columnar numpad + brackets/symbols on the left hand |
 | 3 MEDIA | Escape | volume, brightness, media transport, Bluetooth (BT0–3 / clear / USB-BLE toggle), lock/logout |
 | 4 SYM | Enter | programmer symbols on the left hand |
-| 5 FUN | Delete | F1–F12 + PrintScreen/ScrollLock/Pause |
+| 5 FUN | Delete | F1–F12 + screenshot ⇧⌘4 (file) / ⌃⇧⌘4 (clipboard) + Caps Word |
 | 6 MOUSE | Tab | pointer move, scroll wheel, mouse buttons |
 
 **Home-row mods** use the `HRM` morse profile (permissive-hold + unilateral-tap + flow-tap,
