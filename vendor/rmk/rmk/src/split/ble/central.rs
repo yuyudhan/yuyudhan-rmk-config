@@ -1,5 +1,5 @@
 use core::cell::RefCell;
-use core::sync::atomic::Ordering;
+use core::sync::atomic::{AtomicU8, Ordering};
 
 use bt_hci::cmd::le::{LeReadLocalSupportedFeatures, LeSetPhy, LeSetScanParams};
 use bt_hci::controller::{ControllerCmdAsync, ControllerCmdSync};
@@ -27,6 +27,21 @@ pub(crate) static PERIPHERAL_FOUND: Signal<crate::RawMutex, (u8, BdAddr)> = Sign
 static START_SCANNING: Signal<crate::RawMutex, ()> = Signal::new();
 static STOP_SCANNING: Signal<crate::RawMutex, ()> = Signal::new();
 static SCANNING_MUTEX: Mutex<crate::RawMutex, ()> = Mutex::new(());
+
+// YUYUDHAN PATCH v2 (whitelist gating): live count of connected split
+// peripherals + a change signal, consumed by the host advertising loop in
+// `ble/mod.rs`. Filtered (whitelisted) advertising owns the controller's
+// single filter accept list — the same list `Central::connect` must program
+// to (re)connect a peripheral. The host side therefore only advertises
+// filtered while every peripheral is linked, and restarts advertising on
+// every link transition.
+pub(crate) static CONNECTED_PERIPHERALS: AtomicU8 = AtomicU8::new(0);
+pub(crate) static SPLIT_LINK_CHANGED: Signal<crate::RawMutex, ()> = Signal::new();
+
+/// True when every configured split peripheral currently holds a live link.
+pub(crate) fn all_peripherals_connected() -> bool {
+    CONNECTED_PERIPHERALS.load(Ordering::Relaxed) as usize >= crate::SPLIT_PERIPHERALS_NUM
+}
 
 /// Sleep management signal for BLE Split Central
 ///
@@ -230,6 +245,10 @@ pub(crate) async fn run_ble_peripheral_manager<
                     connected: true,
                 });
 
+                // YUYUDHAN PATCH v2: link up — re-arm whitelisted host advertising.
+                CONNECTED_PERIPHERALS.fetch_add(1, Ordering::Relaxed);
+                SPLIT_LINK_CHANGED.signal(());
+
                 if let Err(e) =
                     run_central_manager_task::<_, _, ROW, COL, ROW_OFFSET, COL_OFFSET>(peri_id, stack, &conn).await
                 {
@@ -237,6 +256,14 @@ pub(crate) async fn run_ble_peripheral_manager<
                     let e = defmt::Debug2Format(&e);
                     error!("BLE central error: {:?}", e);
                 }
+
+                // YUYUDHAN PATCH v2: link down — host advertising must go open so
+                // the filter accept list is free for the reconnect. Saturating so a
+                // spurious extra call can never wrap the counter to "healthy".
+                let _ = CONNECTED_PERIPHERALS.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
+                    Some(n.saturating_sub(1))
+                });
+                SPLIT_LINK_CHANGED.signal(());
             }
             Ok(Err(e)) => {
                 #[cfg(feature = "defmt")]

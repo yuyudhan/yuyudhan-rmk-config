@@ -26,7 +26,7 @@ use crate::core_traits::Runnable;
 use crate::event::SubscribableEvent;
 use crate::hid::{HidWriterTrait, run_led_reader};
 #[cfg(feature = "split")]
-use crate::split::ble::central::CENTRAL_SLEEP;
+use crate::split::ble::central::{CENTRAL_SLEEP, SPLIT_LINK_CHANGED, all_peripherals_connected};
 use crate::state::set_ble_state;
 
 pub(crate) mod battery_service;
@@ -175,25 +175,50 @@ where
 
         let connection_loop = async {
             loop {
-                // YUYUDHAN PATCH (whitelist advertising): when the active profile has a
-                // bond whose identity carries an IRK, advertise filtered to that peer so
-                // no other bonded host can steal the connection slot. Profiles without a
-                // bond (or without an IRK the controller could resolve) advertise open.
+                // YUYUDHAN PATCH v2 (whitelist advertising, gated on split health):
+                // when the active profile has a bond whose identity carries an IRK,
+                // advertise filtered to that peer so no other bonded host can steal
+                // the connection slot. Profiles without a bond (or without an IRK the
+                // controller could resolve) advertise open.
+                //
+                // The filter is additionally gated on every split peripheral being
+                // linked: filtered advertising owns the controller's single filter
+                // accept list, which the split central must program to (re)connect a
+                // peripheral. While any peripheral is down we advertise open so the
+                // list stays free, and SPLIT_LINK_CHANGED restarts advertising on
+                // every link transition (reset BEFORE reading the count so a
+                // transition in between latches a wake instead of being lost).
+                #[cfg(feature = "split")]
+                SPLIT_LINK_CHANGED.reset();
+                #[cfg(feature = "split")]
+                let split_healthy = all_peripherals_connected();
+                #[cfg(not(feature = "split"))]
+                let split_healthy = true;
+
                 #[cfg(feature = "storage")]
                 let peer: Option<Address> = profile_manager
                     .active_bond_info()
+                    .filter(|_| split_healthy)
                     .filter(|p| p.info.identity.irk.is_some())
                     .map(|p| p.info.identity.addr);
                 #[cfg(not(feature = "storage"))]
                 let peer: Option<Address> = None;
 
-                match select(
+                let split_link_watch = async {
+                    #[cfg(feature = "split")]
+                    SPLIT_LINK_CHANGED.wait().await;
+                    #[cfg(not(feature = "split"))]
+                    core::future::pending::<()>().await;
+                };
+
+                match select3(
                     advertise(product_name, &mut peripheral, server, peer),
                     profile_manager.update_profile(),
+                    split_link_watch,
                 )
                 .await
                 {
-                    Either::First(Ok(conn)) => {
+                    Either3::First(Ok(conn)) => {
                         // Do NOT emit BleState::Connected here. gatt_events_task emits
                         // Connected when it sees GattConnectionEvent::Encrypted.
                         #[cfg(feature = "storage")]
@@ -222,7 +247,7 @@ where
                             }
                         }
                     }
-                    Either::First(Err(BleHostError::BleHost(Error::Timeout))) => {
+                    Either3::First(Err(BleHostError::BleHost(Error::Timeout))) => {
                         warn!("Advertising timeout, sleep and wait for any key");
                         set_ble_state(BleState::Inactive);
 
@@ -237,13 +262,16 @@ where
                         #[cfg(feature = "split")]
                         CENTRAL_SLEEP.signal(false);
                     }
-                    Either::First(Err(e)) => {
+                    Either3::First(Err(e)) => {
                         #[cfg(feature = "defmt")]
                         let e = defmt::Debug2Format(&e);
                         error!("Advertise error: {:?}", e);
                         Timer::after_millis(200).await;
                     }
-                    Either::Second(()) => {}
+                    Either3::Second(()) => {}
+                    // YUYUDHAN PATCH v2: split link came up or went down — loop to
+                    // recompute the whitelist gate and restart advertising.
+                    Either3::Third(()) => {}
                 };
 
                 // Skip the Inactive transition if we never moved off Advertising
@@ -591,9 +619,14 @@ where
         ..Default::default()
     };
 
-    // Load the peer into the controller's filter accept list (empty slice clears it).
-    // Must happen before advertising starts.
-    peripheral.set_filter_accept_list(peer.as_slice()).await?;
+    // YUYUDHAN PATCH v2: only program the accept list when actually advertising
+    // filtered. The same list is the split central's reconnect mechanism, so the
+    // open path must make ZERO HCI calls against it — not even a clear. A stale
+    // entry left behind is harmless: with Unfiltered policy the list is unused,
+    // and the split's connect() clears and reprograms it as needed.
+    if let Some(p) = peer {
+        peripheral.set_filter_accept_list(&[p]).await?;
+    }
 
     info!("[adv] advertising");
     set_ble_state(BleState::Advertising);
