@@ -193,7 +193,7 @@ keys = """
 Q                W                E                R                T                    Y                U                I                O                P
 MT(A, LGui, HRM) MT(S, LAlt, HRM) MT(D, LCtrl, HRM) MT(F, LShift, HRM) G                 H                MT(J, RShift, HRM) MT(K, RCtrl, HRM) MT(L, RAlt, HRM) MT(Quote, RGui, HRM)
 Z                X                C                V                B                    N                M                Comma            Dot              Slash
-                                  LT(3, Escape, TL) LT(1, Space, TL) LT(6, Tab, TL)      LT(4, Enter, TL) LT(2, Backspace, TL) LT(5, Delete, TL)
+                                  LT(3, Escape, TL) LT(1, Space, TL) LT(6, Tab, TL)      LT(4, Enter, TLI) LT(2, Backspace, TLI) LT(5, Delete, TL)
 """
 
 # Layer 1 — NAV (hold SPACE). Vim-style arrows on the right home row (HJKL
@@ -341,23 +341,37 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
 #   Biased hard toward "it's a letter" — all three guards must agree it was
 #   a chord before a modifier fires.
 #
-# TL (thumb layer-taps): flow-tap OFF, permissive-hold only.
+# TL (Space/Escape/Tab/Delete layer-taps): flow-tap OFF, permissive-hold.
 #   Flow-tap must stay OFF here: you hold Space for NAV *mid-typing-streak*
 #   (type, arrow over, keep typing). With flow-tap on, that hold would be
-#   forced into a literal space. Permissive-hold keeps layers instant:
-#   Space(down) H(down) H(up) = Left arrow well before 200ms.
+#   forced into a literal space. Permissive-hold keeps the layer instant
+#   (Space(down) H(down) H(up) = Left arrow) while protecting the very
+#   common fast roll "space -> letter" from misfiring as NAV.
 #   Per-profile flow-tap override is the reason rmk is pinned/vendored at
 #   b9820492 — do not "simplify" the profiles into one.
+#
+# TLI (Enter=SYM and Backspace=NUM only — the character-entry layers):
+#   hold_on_other_press — the layer activates THE INSTANT any other key
+#   goes down while the thumb is held. No release-order requirement, no
+#   200ms wait: Bspc(down) D(down) is already NUM, so D = 5 even if the
+#   thumb lifts first (the rolled release that made 5 come out as "d"
+#   under permissive-hold). Known trade-off, accepted deliberately: a fast
+#   tap-then-letter roll on these two thumbs misfires as a layer key
+#   (Bspc(down) E(down) Bspc(up) -> NUM -> "8"; Enter(down) T(down) ->
+#   SYM -> "}"). Escape/Tab/Delete stay on TL: MEDIA/MOUSE/FUN misfires
+#   are rarer and permissive-hold is the safer default there. Keep Space
+#   on TL or fast "space then letter" rolls would eat the letter as NAV.
 # ============================================================================
 [behavior.morse]
 enable_flow_tap = true
-prior_idle_time = "120ms"
+prior_idle_time = "100ms"
 hold_timeout = "200ms"
 gap_timeout = "200ms"
 
 [behavior.morse.profiles]
 HRM = { enable_flow_tap = true, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
-TL  = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+TL = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+TLI = { enable_flow_tap = false, hold_on_other_press = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 
 # ============================================================================
 # SPLIT — how the two halves relate. The halves talk to each other over BLE;
