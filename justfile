@@ -42,15 +42,26 @@ build target:
       left|right|both) ;;
       *) echo "Unknown target: {{target}}  (valid: left | right | both)" >&2; exit 1 ;;
     esac
+    # Auto-bump the patch version on a full `both` build — the canonical "cut
+    # firmware" path — so each release is uniquely numbered and both halves share
+    # one version. `left`/`right` builds embed the current VERSION unchanged,
+    # keeping the two OLEDs in sync when you flash a single half on its own.
+    if [ "{{target}}" = "both" ]; then
+      IFS=. read -r MAJ MIN PAT < VERSION
+      PAT=$(( ${PAT:-0} + 1 ))
+      printf '%s.%s.%s\n' "${MAJ:-0}" "${MIN:-0}" "$PAT" > VERSION
+      echo "==> Version bumped -> y${MAJ:-0}.${MIN:-0}.${PAT} (VERSION)"
+    fi
+    version="$(tr -d '[:space:]' < VERSION)"
     # Compile -> hex -> uf2 via cargo-make. All outputs land in ./build/ (staging).
     case "{{target}}" in
       left)  cargo make uf2-central --release ;;
       right) cargo make uf2-peripheral --release ;;
       both)  cargo make uf2 --release ;;
     esac
-    # Move the finished UF2(s) from build/ into a timestamped keepsake dir.
+    # Move the finished UF2(s) from build/ into a timestamped, version-stamped keepsake dir.
     stamp="$(date '+%Y-%m-%d_%H-%M-%S')"
-    dest="firmware/${stamp}"
+    dest="firmware/${stamp}_y${version}"
     mkdir -p "$dest"
     case "{{target}}" in left|both)  [ -f build/rmk-central.uf2 ]    && mv build/rmk-central.uf2    "$dest/";; esac
     case "{{target}}" in right|both) [ -f build/rmk-peripheral.uf2 ] && mv build/rmk-peripheral.uf2 "$dest/";; esac
@@ -59,7 +70,7 @@ build target:
     cp config/vial.json "$dest/" 2>/dev/null || true
     [ -f yuyudhan-1_keymap.svg ]  && cp yuyudhan-1_keymap.svg  "$dest/" || true
     [ -f yuyudhan-1-viewer.html ] && cp yuyudhan-1-viewer.html "$dest/" || true
-    echo "==> Firmware archived -> $dest (build/ staging + root left clean)"
+    echo "==> Firmware y${version} archived -> $dest (build/ staging + root left clean)"
     ls -l "$dest"
 
 # Compile-only sanity check. target = left | right | both. No .hex/.uf2 produced.

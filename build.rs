@@ -25,6 +25,18 @@ fn main() {
     println!("cargo:rerun-if-changed=config/vial.json");
     generate_vial_config();
 
+    // Firmware version: single source of truth is the repo-root `VERSION` file
+    // (e.g. `0.0.1`). Embedded as a compile-time env var read via
+    // `env!("YUYUDHAN_FW_VERSION")` and shown on the central OLED as `y{ver}`.
+    // Editing VERSION triggers a rebuild via rerun-if-changed below.
+    println!("cargo:rerun-if-changed=VERSION");
+    let fw_version = fs::read_to_string("VERSION")
+        .map(|s| s.trim().to_owned())
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "0.0.0".to_owned());
+    println!("cargo:rustc-env=YUYUDHAN_FW_VERSION={fw_version}");
+
     // Put `memory.x` in our output directory and ensure it's
     // on the linker search path.
     let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
