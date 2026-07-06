@@ -300,17 +300,18 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
 #   Lower = mods fire faster but fast typing misfires more; higher = safer
 #   typing but you must consciously wait longer for a chord.
 #
-# enable_flow_tap + prior_idle_time = 120ms   ("am I mid-word?")
-#   If ANY other key was pressed less than 120ms before a dual key goes
+# enable_flow_tap + prior_idle_time = 90ms   ("am I mid-word?")
+#   If ANY other key was pressed less than 90ms before a dual key goes
 #   down, the firmware decides TAP instantly — no waiting, no misfire.
 #   This is the main defence against rolls like "ds" firing Ctrl mid-word.
-#   Consequence: to USE a home-row mod you must pause >=120ms first —
+#   Consequence: to USE a home-row mod you must pause >=90ms first —
 #   which you naturally do before a deliberate shortcut like Ctrl+C.
-#   Tuned for ~87 WPM (~138ms between keystrokes); if you get faster and
-#   mods start firing mid-word, RAISE this. If deliberate chords keep
-#   coming out as letters, you're chording faster than you pause — LOWER it.
+#   Tuned for ~87 WPM (~138ms between keystrokes); lowered 120ms -> 100ms -> 90ms
+#   because deliberate chords (Ctrl via D) kept resolving as letters — the
+#   user chords faster than the pause. If mods start firing mid-word,
+#   raise it back toward 100ms.
 #   NOTE: prior_idle_time is GLOBAL (this top-level table only); profiles
-#   can switch flow-tap on/off but all share this 120ms window.
+#   can switch flow-tap on/off but all share this 90ms window.
 #
 # permissive_hold (per-profile below)   ("nested press = intentional chord")
 #   While the dual key is down, if another key is pressed AND RELEASED
@@ -330,9 +331,9 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
 #   that define them. Pure MT()/LT() keys define only TAP and HOLD, so this
 #   is INERT here.
 #   Letter auto-repeat on dual keys depends on WHEN you press:
-#   - mid-streak (within the 120ms flow-tap window): the letter's press is
+#   - mid-streak (within the 90ms flow-tap window): the letter's press is
 #     sent and held while the key is down -> OS auto-repeat works ("dddd...").
-#   - after a pause (>=120ms idle): holding resolves as mod/layer at 200ms —
+#   - after a pause (>=90ms idle): holding resolves as mod/layer at 200ms —
 #     no letter repeat. To repeat a home-row letter, keep it inside a streak.
 #
 # Profiles — referenced by name in MT(...)/LT(...) above:
@@ -364,7 +365,7 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
 # ============================================================================
 [behavior.morse]
 enable_flow_tap = true
-prior_idle_time = "100ms"
+prior_idle_time = "90ms"
 hold_timeout = "200ms"
 gap_timeout = "200ms"
 
