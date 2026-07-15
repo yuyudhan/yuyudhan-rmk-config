@@ -1801,6 +1801,9 @@ impl<'a> Keyboard<'a> {
                     // only meaningful when both transports exist in this build.
                     #[cfg(not(feature = "_no_usb"))]
                     crate::state::toggle_preferred().await;
+                } else if id == NUM_BLE_PROFILE as u8 + 5 {
+                    // Clear bonds for ALL BLE profiles (not just the current one)
+                    BLE_PROFILE_CHANNEL.send(BleProfileAction::ClearAll).await;
                 }
             }
         }

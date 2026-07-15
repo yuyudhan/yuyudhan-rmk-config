@@ -76,6 +76,7 @@ pub(crate) enum BleProfileAction {
     Previous,
     Next,
     ClearBond,
+    ClearAll,
 }
 
 /// Manage BLE profiles and bonding information
@@ -310,6 +311,11 @@ where
                         }
                         BleProfileAction::ClearBond => {
                             self.clear_bond(current_profile()).await;
+                        }
+                        BleProfileAction::ClearAll => {
+                            for slot in 0..NUM_BLE_PROFILE as u8 {
+                                self.clear_bond(slot).await;
+                            }
                         }
                     }
                     #[cfg(feature = "storage")]

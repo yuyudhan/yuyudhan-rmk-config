@@ -235,12 +235,13 @@ Grave       Kc1 Kc2 Kc3 Backslash             No No No No No
 # Layer 3 — MEDIA (hold ESCAPE). Volume/brightness/media transport plus all
 # Bluetooth management (see ble_profiles_num for the User* decoding):
 #   User0-3 = select BT profile 0-3      User6 = clear bond of CURRENT profile
-#   User7   = toggle output USB <-> BLE  TG(7) = blank both OLEDs (see layer 7)
-# Top corners: WM(Q, LCtrl|LGui) = lock screen, WM(Q, LShift|LGui) = logout (macOS).
+#   User7   = toggle output USB <-> BLE  User9 = clear bonds of ALL profiles
+#   TG(7)   = blank both OLEDs (see layer 7)
+# Y key: WM(Q, LCtrl|LGui) = lock screen (macOS).
 [[layer]]
 name = "MEDIA"
 keys = """
-No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 WM(Q, LShift | LGui)
+No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 User9
 LGui LAlt LCtrl LShift No                      TG(7)        AudioVolDown   AudioVolUp   MediaPrevTrack MediaNextTrack
 No   No   No   No   No                         User7        User0          User1        User2          User3
                No   No   No                    MediaStop    MediaPlayPause AudioMute

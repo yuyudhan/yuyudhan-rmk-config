@@ -63,7 +63,7 @@ KEYCODE_DISPLAY: dict[str, str] = {
     "Macro0": "2×Click", "Macro1": "3×Click",
     # Bluetooth / output User keys  (ble_profiles_num = 4)
     "User0": "BT0", "User1": "BT1", "User2": "BT2", "User3": "BT3",
-    "User6": "ClrBT", "User7": "Out⇄",
+    "User6": "ClrBT", "User7": "Out⇄", "User9": "ClrAllBT",
     # Bare modifiers
     "LGui": "GUI",   "RGui": "GUI",
     "LAlt": "Alt",   "RAlt": "Alt",

@@ -28,7 +28,7 @@ One profile, one keymap. Everything lives in `config/keyboard.toml`; there is no
 | 0 BASE | — | QWERTY + GACS home-row mods (A/S/D/F = GUI/Alt/Ctrl/Shift, mirrored J/K/L/') |
 | 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn, doc nav/zoom (⌘[/⌘]/⌘−/⌘+/⌘0), window/app switching (⌘`/⌘⇧`/⌘Tab/⌘⇧Tab/⌘Space) |
 | 2 NUM | Backspace | columnar numpad + brackets/symbols on the left hand |
-| 3 MEDIA | Escape | volume, brightness, media transport, Bluetooth (BT0–3 / clear / USB-BLE toggle), lock/logout |
+| 3 MEDIA | Escape | volume, brightness, media transport, Bluetooth (BT0–3 / clear current / clear all / USB-BLE toggle), lock |
 | 4 SYM | Enter | programmer symbols on the left hand |
 | 5 FUN | Delete | F1–F12 + screenshot ⇧⌘4 (file) / ⌃⇧⌘4 (clipboard) + Caps Word |
 | 6 MOUSE | Tab | pointer move, scroll wheel, mouse buttons |
@@ -49,6 +49,7 @@ RMK exposes BLE control as `User` keycodes (4 profiles configured via `ble_profi
 | `User0`–`User3` | select BT profile 0–3 | BT0–BT3 |
 | `User6` | clear bond for current profile | Clear BT |
 | `User7` | toggle output USB ↔ BLE | Switch Output |
+| `User9` | clear bonds of ALL profiles | (custom — no built-in Vial label) |
 
 ## Build
 
