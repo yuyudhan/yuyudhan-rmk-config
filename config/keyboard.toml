@@ -205,13 +205,15 @@ Z                X                C                V                B           
 """
 
 # Layer 1 — NAV (hold SPACE). Vim-style arrows on the right home row (HJKL
-# positions), Home/PgDn/PgUp/End below them, clipboard chords (Cmd-Z/X/C/V,
-# Cmd-Shift-Z) on the top row. Left home row pre-holds plain GACS mods so
-# e.g. Space+LShift+Right selects text word-by-word without leaving the layer.
+# positions), Home/PgDn/PgUp/End below them, document nav + zoom
+# (Cmd-[/Cmd-]/Cmd--/Cmd-+/Cmd-0) on the top-left row, window/app switching
+# (Cmd-`/Cmd-Shift-`/Cmd-Tab/Cmd-Shift-Tab/Cmd-Space) on the top-right row.
+# Left home row pre-holds plain GACS mods so e.g. Space+LShift+Right selects
+# text word-by-word without leaving the layer.
 [[layer]]
 name = "NAV"
 keys = """
-No   No   No   No   No                       WM(Z, LGui | LShift) WM(V, LGui) WM(C, LGui) WM(X, LGui) WM(Z, LGui)
+WM(LeftBracket, LGui) WM(RightBracket, LGui) WM(Minus, LGui) WM(Equal, LGui) WM(Kc0, LGui)   WM(Grave, LGui) WM(Grave, LGui | LShift) WM(Tab, LGui) WM(Tab, LGui | LShift) WM(Space, LGui)
 LGui LAlt LCtrl LShift No                     Left      Down      Up        Right     CapsLock
 No   No   No   No   No                        Home      PageDown  PageUp    End       Insert
                No   No   No                   Enter     Backspace Delete

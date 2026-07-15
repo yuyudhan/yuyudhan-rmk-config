@@ -26,7 +26,7 @@ One profile, one keymap. Everything lives in `config/keyboard.toml`; there is no
 | Layer | Thumb (hold) | Contents |
 |-------|--------------|----------|
 | 0 BASE | — | QWERTY + GACS home-row mods (A/S/D/F = GUI/Alt/Ctrl/Shift, mirrored J/K/L/') |
-| 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn, clipboard (⌘Z/X/C/V, ⌘⇧Z) |
+| 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn, doc nav/zoom (⌘[/⌘]/⌘−/⌘+/⌘0), window/app switching (⌘`/⌘⇧`/⌘Tab/⌘⇧Tab/⌘Space) |
 | 2 NUM | Backspace | columnar numpad + brackets/symbols on the left hand |
 | 3 MEDIA | Escape | volume, brightness, media transport, Bluetooth (BT0–3 / clear / USB-BLE toggle), lock/logout |
 | 4 SYM | Enter | programmer symbols on the left hand |
