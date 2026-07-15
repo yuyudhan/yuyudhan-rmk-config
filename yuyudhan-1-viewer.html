@@ -17,90 +17,151 @@
   --hold-color: #7dcfff;
   --desc-color: #6272a4;
   --head-color: #bb9af7;
-  --active-key: #1a3a5c;
+  --active-bg:  #2e4a6e;
   --radius:     6px;
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
-body {
-  background: var(--bg);
-  color: var(--tap-color);
-  padding: 24px 16px;
-}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--tap-color); }
 
-nav {
+.app { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
-.nav-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--tap-color);
-  padding: 6px 14px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 13px;
-  font-family: inherit;
-  transition: background 0.15s, border-color 0.15s;
-}
-.nav-btn:hover { background: var(--key-hover); }
-.nav-btn.active { background: #2e4a6e; border-color: var(--hold-color); }
 
-.layer {
-  margin-bottom: 40px;
-  padding: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  transition: border-color 0.2s;
-}
-.layer.highlighted { border-color: var(--hold-color); }
-
-.layer-header { margin-bottom: 16px; }
-.layer-header h2 {
-  font-size: 20px;
-  color: var(--head-color);
+.sidebar-header { padding: 20px 18px 14px; border-bottom: 1px solid var(--border); }
+.sidebar-header h1 {
+  font-size: 15px;
   font-weight: 600;
+  color: var(--head-color);
+  letter-spacing: 0.02em;
 }
-.layer-num {
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  background: #3b4261;
-  border-radius: 4px;
-  text-align: center;
-  line-height: 24px;
-  font-size: 13px;
-  margin-right: 6px;
-  color: var(--hold-color);
-}
-.layer-desc {
-  margin-top: 4px;
-  font-size: 13px;
+.sidebar-header .subtitle {
+  margin-top: 3px;
+  font-size: 11px;
   color: var(--desc-color);
 }
 
+.layer-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--tap-color);
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.nav-item:hover { background: var(--key-hover); }
+.nav-item:focus-visible { outline: 2px solid var(--hold-color); outline-offset: -2px; }
+.nav-item.active { background: var(--active-bg); border-color: var(--hold-color); color: #fff; }
+
+.nav-index {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  background: #3b4261;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--hold-color);
+}
+.nav-item.active .nav-index { background: var(--hold-color); color: #0d1117; }
+
+.nav-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--desc-color);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sidebar-footer kbd {
+  background: var(--key-bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--tap-color);
+}
+
+/* ── Main content ────────────────────────────────────────────────────── */
+
+.content { flex: 1; padding: 36px 44px; overflow-y: auto; }
+
+.layer { display: none; }
+.layer.active {
+  display: block;
+  animation: layer-in 0.15s ease;
+}
+@keyframes layer-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.layer-header { margin-bottom: 20px; }
+.layer-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--head-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.layer-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: #3b4261;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--hold-color);
+}
+.layer-desc { margin-top: 6px; font-size: 13px; color: var(--desc-color); }
+
 .keyboard { display: flex; flex-direction: column; gap: 6px; }
 
-.kb-row {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
+.kb-row { display: flex; align-items: center; gap: 0; }
 
-.kb-half {
-  display: flex;
-  gap: 5px;
-}
+.kb-half { display: flex; gap: 5px; }
 .kb-split-gap { width: 30px; flex-shrink: 0; }
 
-.thumb-half {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
+.thumb-half { display: flex; gap: 5px; align-items: center; }
 .thumb-spacer { width: 50px; flex-shrink: 0; }
 
 .key {
@@ -150,7 +211,23 @@ nav {
 /* Shrink oversized tap labels */
 .key .tap[data-len="long"] { font-size: 11px; }
 
-@media (max-width: 680px) {
+@media (max-width: 720px) {
+  .app { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .sidebar-header { display: none; }
+  .sidebar-footer { display: none; }
+  .layer-nav { flex-direction: row; padding: 8px; }
+  .nav-item { flex-shrink: 0; }
+  .nav-name { max-width: 90px; }
+  .content { padding: 20px 16px; }
   .key { width: 48px; height: 44px; }
   .tap { font-size: 12px; }
   .hold { font-size: 8px; }
@@ -160,19 +237,22 @@ nav {
   </style>
 </head>
 <body>
-  <h1 style="margin-bottom:12px;font-size:22px;color:#bb9af7">
-    yuyudhan-1 — Corne 36-key keymap
-  </h1>
-  <p style="margin-bottom:16px;font-size:13px;color:#6272a4">
-    Press <kbd style="background:#2a2d3e;padding:1px 5px;border-radius:3px;border:1px solid #3b4261">0</kbd>–<kbd style="background:#2a2d3e;padding:1px 5px;border-radius:3px;border:1px solid #3b4261">6</kbd>
-    to jump to a layer. Tap labels in <span style="color:#c0caf5">light</span>,
-    hold labels in <span style="color:#7dcfff">blue</span>.
-  </p>
-  <nav>
-    <button class="nav-btn" title="Press 0">0&nbsp;BASE</button><button class="nav-btn" title="Press 1">1&nbsp;NAV</button><button class="nav-btn" title="Press 2">2&nbsp;NUM</button><button class="nav-btn" title="Press 3">3&nbsp;MEDIA</button><button class="nav-btn" title="Press 4">4&nbsp;SYM</button><button class="nav-btn" title="Press 5">5&nbsp;FUN</button><button class="nav-btn" title="Press 6">6&nbsp;MOUSE</button><button class="nav-btn" title="Press 7">7&nbsp;DISPOFF</button>
-  </nav>
-
-<section class="layer" id="layer-0" data-index="0">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>yuyudhan-1</h1>
+        <p class="subtitle">Corne 36-key keymap</p>
+      </div>
+      <nav class="layer-nav" role="listbox" aria-label="Keymap layers">
+        <button class="nav-item active" data-index="0" role="option" aria-selected="true" title="Press 0"><span class="nav-index">0</span><span class="nav-name">BASE</span></button><button class="nav-item" data-index="1" role="option" aria-selected="false" title="Press 1"><span class="nav-index">1</span><span class="nav-name">NAV</span></button><button class="nav-item" data-index="2" role="option" aria-selected="false" title="Press 2"><span class="nav-index">2</span><span class="nav-name">NUM</span></button><button class="nav-item" data-index="3" role="option" aria-selected="false" title="Press 3"><span class="nav-index">3</span><span class="nav-name">MEDIA</span></button><button class="nav-item" data-index="4" role="option" aria-selected="false" title="Press 4"><span class="nav-index">4</span><span class="nav-name">SYM</span></button><button class="nav-item" data-index="5" role="option" aria-selected="false" title="Press 5"><span class="nav-index">5</span><span class="nav-name">FUN</span></button><button class="nav-item" data-index="6" role="option" aria-selected="false" title="Press 6"><span class="nav-index">6</span><span class="nav-name">MOUSE</span></button><button class="nav-item" data-index="7" role="option" aria-selected="false" title="Press 7"><span class="nav-index">7</span><span class="nav-name">DISPOFF</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <p><kbd>j</kbd>/<kbd>k</kbd> or <kbd>&#8595;</kbd>/<kbd>&#8593;</kbd> — move</p>
+        <p><kbd>0</kbd>&ndash;<kbd>7</kbd> — jump to layer</p>
+      </div>
+    </aside>
+    <main class="content" id="content">
+<section class="layer active" id="layer-0" data-index="0">
   <div class="layer-header"><h2><span class="layer-num">0</span> BASE</h2><p class="layer-desc">QWERTY + GACS home-row mods (A/S/D/F = GUI/Alt/Ctrl/Shift, mirrored on J/K/L/&#x27;)</p></div>
   <div class="keyboard">
     <div class="kb-row">
@@ -740,32 +820,44 @@ nav {
     </div>
   </div>
 </section>
-
+    </main>
+  </div>
   <script>
 (function() {
-  var layers = document.querySelectorAll('.layer');
-  var btns   = document.querySelectorAll('.nav-btn');
+  var navItems = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
+  var layers   = Array.prototype.slice.call(document.querySelectorAll('.layer'));
+  var content  = document.getElementById('content');
+  var current  = 0;
 
   function activate(idx) {
+    if (idx < 0 || idx >= layers.length || idx === current) return;
+    current = idx;
     layers.forEach(function(l, i) {
-      l.classList.toggle('highlighted', i === idx);
+      l.classList.toggle('active', i === idx);
     });
-    btns.forEach(function(b, i) {
-      b.classList.toggle('active', i === idx);
+    navItems.forEach(function(b, i) {
+      var isActive = i === idx;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
-    if (layers[idx]) {
-      layers[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if (content) { content.scrollTop = 0; }
   }
 
-  btns.forEach(function(b, i) {
+  navItems.forEach(function(b, i) {
     b.addEventListener('click', function() { activate(i); });
   });
 
   document.addEventListener('keydown', function(e) {
-    var k = parseInt(e.key, 10);
-    if (!isNaN(k) && k >= 0 && k < layers.length) {
-      activate(k);
+    if (e.metaKey || e.ctrlKey || e.altKey) { return; }
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      activate(current + 1);
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      activate(current - 1);
+    } else {
+      var n = parseInt(e.key, 10);
+      if (!isNaN(n) && n >= 0 && n < layers.length) { activate(n); }
     }
   });
 

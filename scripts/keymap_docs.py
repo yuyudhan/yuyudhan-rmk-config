@@ -335,8 +335,16 @@ def _esc(s: str) -> str:
     return html_mod.escape(s, quote=True)
 
 
-def _key_cell_html(tap: str, hold: str | None) -> str:
+def _key_cell_html(tap: str, hold: str | None, activator_label: str | None = None) -> str:
     """Render one key cell as an HTML div."""
+    if activator_label:
+        return (
+            f'<div class="key key-activator">'
+            f'<span class="activator-dot"></span>'
+            f'<span class="activator-label">{_esc(activator_label)}</span>'
+            f'</div>'
+        )
+
     tap_escaped  = _esc(tap)  if tap  else ""
     hold_escaped = _esc(hold) if hold else ""
 
@@ -352,14 +360,17 @@ def _key_cell_html(tap: str, hold: str | None) -> str:
     return f'<div class="key{extra_cls}">{inner}</div>'
 
 
-def _layer_html(idx: int, layer: dict) -> str:
+def _layer_html(idx: int, layer: dict, activator: tuple[int, str] | None = None) -> str:
     """Render one layer as an HTML section."""
     name = layer["name"]
     keys = layer["keys"]
+    activator_idx = activator[0] if activator else -1
+    activator_label = activator[1] if activator else None
     desc = _esc(LAYER_DESC.get(name, ""))
 
     parts: list[str] = []
-    parts.append(f'<section class="layer" id="layer-{idx}" data-index="{idx}">')
+    active_cls = " active" if idx == 0 else ""
+    parts.append(f'<section class="layer{active_cls}" id="layer-{idx}" data-index="{idx}">')
     parts.append(
         f'  <div class="layer-header">'
         f'<h2><span class="layer-num">{idx}</span> {_esc(name)}</h2>'
@@ -373,12 +384,12 @@ def _layer_html(idx: int, layer: dict) -> str:
         parts.append('    <div class="kb-row">')
         parts.append('      <div class="kb-half">')
         for i in left_range:
-            parts.append("        " + _key_cell_html(*keys[i]))
+            parts.append("        " + _key_cell_html(*keys[i], activator_label if i == activator_idx else None))
         parts.append("      </div>")
         parts.append('      <div class="kb-split-gap"></div>')
         parts.append('      <div class="kb-half">')
         for i in right_range:
-            parts.append("        " + _key_cell_html(*keys[i]))
+            parts.append("        " + _key_cell_html(*keys[i], activator_label if i == activator_idx else None))
         parts.append("      </div>")
         parts.append("    </div>")
 
@@ -387,12 +398,12 @@ def _layer_html(idx: int, layer: dict) -> str:
     parts.append('      <div class="kb-half thumb-half">')
     parts.append('        <div class="thumb-spacer"></div>')
     for i in _THUMB_LEFT:
-        parts.append("        " + _key_cell_html(*keys[i]))
+        parts.append("        " + _key_cell_html(*keys[i], activator_label if i == activator_idx else None))
     parts.append("      </div>")
     parts.append('      <div class="kb-split-gap"></div>')
     parts.append('      <div class="kb-half thumb-half">')
     for i in _THUMB_RIGHT:
-        parts.append("        " + _key_cell_html(*keys[i]))
+        parts.append("        " + _key_cell_html(*keys[i], activator_label if i == activator_idx else None))
     parts.append('        <div class="thumb-spacer"></div>')
     parts.append("      </div>")
     parts.append("    </div>")
@@ -415,91 +426,153 @@ _CSS = """\
   --hold-color: #7dcfff;
   --desc-color: #6272a4;
   --head-color: #bb9af7;
-  --active-key: #1a3a5c;
+  --active-bg:  #2e4a6e;
+  --danger:     #f7768e;
   --radius:     6px;
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
-body {
-  background: var(--bg);
-  color: var(--tap-color);
-  padding: 24px 16px;
-}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--tap-color); }
 
-nav {
+.app { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
-.nav-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--tap-color);
-  padding: 6px 14px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 13px;
-  font-family: inherit;
-  transition: background 0.15s, border-color 0.15s;
-}
-.nav-btn:hover { background: var(--key-hover); }
-.nav-btn.active { background: #2e4a6e; border-color: var(--hold-color); }
 
-.layer {
-  margin-bottom: 40px;
-  padding: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  transition: border-color 0.2s;
-}
-.layer.highlighted { border-color: var(--hold-color); }
-
-.layer-header { margin-bottom: 16px; }
-.layer-header h2 {
-  font-size: 20px;
-  color: var(--head-color);
+.sidebar-header { padding: 20px 18px 14px; border-bottom: 1px solid var(--border); }
+.sidebar-header h1 {
+  font-size: 15px;
   font-weight: 600;
+  color: var(--head-color);
+  letter-spacing: 0.02em;
 }
-.layer-num {
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  background: #3b4261;
-  border-radius: 4px;
-  text-align: center;
-  line-height: 24px;
-  font-size: 13px;
-  margin-right: 6px;
-  color: var(--hold-color);
-}
-.layer-desc {
-  margin-top: 4px;
-  font-size: 13px;
+.sidebar-header .subtitle {
+  margin-top: 3px;
+  font-size: 11px;
   color: var(--desc-color);
 }
 
+.layer-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--tap-color);
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.nav-item:hover { background: var(--key-hover); }
+.nav-item:focus-visible { outline: 2px solid var(--hold-color); outline-offset: -2px; }
+.nav-item.active { background: var(--active-bg); border-color: var(--hold-color); color: #fff; }
+
+.nav-index {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  background: #3b4261;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--hold-color);
+}
+.nav-item.active .nav-index { background: var(--hold-color); color: #0d1117; }
+
+.nav-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--desc-color);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sidebar-footer kbd {
+  background: var(--key-bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--tap-color);
+}
+
+/* ── Main content ────────────────────────────────────────────────────── */
+
+.content { flex: 1; padding: 36px 44px; overflow-y: auto; }
+
+.layer { display: none; }
+.layer.active {
+  display: block;
+  animation: layer-in 0.15s ease;
+}
+@keyframes layer-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.layer-header { margin-bottom: 20px; }
+.layer-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--head-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.layer-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: #3b4261;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--hold-color);
+}
+.layer-desc { margin-top: 6px; font-size: 13px; color: var(--desc-color); }
+
 .keyboard { display: flex; flex-direction: column; gap: 6px; }
 
-.kb-row {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
+.kb-row { display: flex; align-items: center; gap: 0; }
 
-.kb-half {
-  display: flex;
-  gap: 5px;
-}
+.kb-half { display: flex; gap: 5px; }
 .kb-split-gap { width: 30px; flex-shrink: 0; }
 
-.thumb-half {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-.thumb-spacer { width: 50px; flex-shrink: 0; }
+.thumb-half { display: flex; gap: 5px; align-items: center; }
+.thumb-spacer { width: 121px; flex-shrink: 0; }
 
 .key {
   width: 58px;
@@ -519,6 +592,38 @@ nav {
 }
 .key:hover { background: var(--key-hover); }
 .key.empty { background: transparent; border-color: #2a2d3e; }
+.key-activator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-color: var(--danger);
+  background: rgba(247, 118, 142, 0.10);
+  animation: activator-pulse 1.6s ease-in-out infinite;
+}
+.activator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 6px var(--danger);
+}
+.activator-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--danger);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+@keyframes activator-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px var(--danger), 0 0 6px rgba(247, 118, 142, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 1px var(--danger), 0 0 14px rgba(247, 118, 142, 0.6);
+  }
+}
 
 .tap {
   font-size: 15px;
@@ -548,39 +653,66 @@ nav {
 /* Shrink oversized tap labels */
 .key .tap[data-len="long"] { font-size: 11px; }
 
-@media (max-width: 680px) {
+@media (max-width: 720px) {
+  .app { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .sidebar-header { display: none; }
+  .sidebar-footer { display: none; }
+  .layer-nav { flex-direction: row; padding: 8px; }
+  .nav-item { flex-shrink: 0; }
+  .nav-name { max-width: 90px; }
+  .content { padding: 20px 16px; }
   .key { width: 48px; height: 44px; }
   .tap { font-size: 12px; }
   .hold { font-size: 8px; }
-  .thumb-spacer { width: 36px; }
+  .thumb-spacer { width: 101px; }
 }
 """
 
 _JS = """\
 (function() {
-  var layers = document.querySelectorAll('.layer');
-  var btns   = document.querySelectorAll('.nav-btn');
+  var navItems = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
+  var layers   = Array.prototype.slice.call(document.querySelectorAll('.layer'));
+  var content  = document.getElementById('content');
+  var current  = 0;
 
   function activate(idx) {
+    if (idx < 0 || idx >= layers.length || idx === current) return;
+    current = idx;
     layers.forEach(function(l, i) {
-      l.classList.toggle('highlighted', i === idx);
+      l.classList.toggle('active', i === idx);
     });
-    btns.forEach(function(b, i) {
-      b.classList.toggle('active', i === idx);
+    navItems.forEach(function(b, i) {
+      var isActive = i === idx;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
-    if (layers[idx]) {
-      layers[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if (content) { content.scrollTop = 0; }
   }
 
-  btns.forEach(function(b, i) {
+  navItems.forEach(function(b, i) {
     b.addEventListener('click', function() { activate(i); });
   });
 
   document.addEventListener('keydown', function(e) {
-    var k = parseInt(e.key, 10);
-    if (!isNaN(k) && k >= 0 && k < layers.length) {
-      activate(k);
+    if (e.metaKey || e.ctrlKey || e.altKey) { return; }
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      activate(current + 1);
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      activate(current - 1);
+    } else {
+      var n = parseInt(e.key, 10);
+      if (!isNaN(n) && n >= 0 && n < layers.length) { activate(n); }
     }
   });
 
@@ -594,15 +726,29 @@ _JS = """\
 
 def build_html(layers: list[dict]) -> str:
     layer_names = [l["name"] for l in layers]
+    last_idx = len(layer_names) - 1
 
-    # Navigation buttons
-    nav_btns = "".join(
-        f'<button class="nav-btn" title="Press {i}">{i}&nbsp;{_esc(name)}</button>'
+    nav_items = "".join(
+        f'<button class="nav-item{" active" if i == 0 else ""}" '
+        f'data-index="{i}" role="option" '
+        f'aria-selected="{"true" if i == 0 else "false"}" '
+        f'title="Press {i}">'
+        f'<span class="nav-index">{i}</span>'
+        f'<span class="nav-name">{_esc(name)}</span>'
+        f'</button>'
         for i, name in enumerate(layer_names)
     )
 
-    # Layer sections
-    layer_sections = "\n".join(_layer_html(i, l) for i, l in enumerate(layers))
+    base_keys = layers[0]["keys"]
+    activator_by_layer: dict[str, tuple[int, str]] = {}
+    for i, (tap, hold) in enumerate(base_keys):
+        if hold:
+            activator_by_layer[hold] = (i, tap)
+
+    layer_sections = "\n".join(
+        _layer_html(i, l, activator_by_layer.get(l["name"]))
+        for i, l in enumerate(layers)
+    )
 
     return f"""\
 <!DOCTYPE html>
@@ -616,20 +762,24 @@ def build_html(layers: list[dict]) -> str:
   </style>
 </head>
 <body>
-  <h1 style="margin-bottom:12px;font-size:22px;color:#bb9af7">
-    yuyudhan-1 — Corne 36-key keymap
-  </h1>
-  <p style="margin-bottom:16px;font-size:13px;color:#6272a4">
-    Press <kbd style="background:#2a2d3e;padding:1px 5px;border-radius:3px;border:1px solid #3b4261">0</kbd>–<kbd style="background:#2a2d3e;padding:1px 5px;border-radius:3px;border:1px solid #3b4261">6</kbd>
-    to jump to a layer. Tap labels in <span style="color:#c0caf5">light</span>,
-    hold labels in <span style="color:#7dcfff">blue</span>.
-  </p>
-  <nav>
-    {nav_btns}
-  </nav>
-
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>yuyudhan-1</h1>
+        <p class="subtitle">Corne 36-key keymap</p>
+      </div>
+      <nav class="layer-nav" role="listbox" aria-label="Keymap layers">
+        {nav_items}
+      </nav>
+      <div class="sidebar-footer">
+        <p><kbd>j</kbd>/<kbd>k</kbd> or <kbd>&#8595;</kbd>/<kbd>&#8593;</kbd> — move</p>
+        <p><kbd>0</kbd>&ndash;<kbd>{last_idx}</kbd> — jump to layer</p>
+      </div>
+    </aside>
+    <main class="content" id="content">
 {layer_sections}
-
+    </main>
+  </div>
   <script>
 {_JS}
   </script>
