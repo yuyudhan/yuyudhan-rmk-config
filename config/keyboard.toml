@@ -272,14 +272,21 @@ F10 F1 F2 F3 CapsWordToggle                     No No No No No
 
 # Layer 6 — MOUSE (hold TAB). Pointer movement on the right home row (same
 # HJKL directions as NAV arrows), scroll wheel below, buttons on the thumbs.
+# Top row: U = Macro0 (double-click), I = Macro1 (triple-click) — see the
+# [[behavior.macro.macros]] section below, flanked by MouseAccel0/MouseAccel2:
+# hold one while moving the pointer via HJKL for 0.25x precision / 2x turbo
+# speed (accel bits are momentary modifiers, same hold-then-press pattern as
+# the GACS mods below). Left thumb cluster adds MouseBtn4/MouseBtn5 (Back/
+# Forward) for browser & Finder history nav, mirroring the LMB/MMB/RMB
+# cluster on the right thumbs.
 # ZMK button order LCLK/MCLK/RCLK maps to RMK Btn1/Btn3/Btn2.
 [[layer]]
 name = "MOUSE"
 keys = """
-No   No   No   No   No                          No             No             No           No             No
-LGui LAlt LCtrl LShift No                        MouseLeft      MouseDown      MouseUp      MouseRight     No
-No   No   No   No   No                           MouseWheelLeft MouseWheelDown MouseWheelUp MouseWheelRight No
-               No   No   No                      MouseBtn1      MouseBtn3      MouseBtn2
+No   No   No   No   No                          MouseAccel0    Macro0         Macro1         MouseAccel2    No
+LGui LAlt LCtrl LShift No                        MouseLeft      MouseDown      MouseUp        MouseRight     No
+No   No   No   No   No                           MouseWheelLeft MouseWheelDown MouseWheelUp   MouseWheelRight No
+               MouseBtn4 MouseBtn5 No             MouseBtn1      MouseBtn3      MouseBtn2
 """
 
 # Layer 7 — DISPOFF (toggled by TG(7) on MEDIA). Fully transparent, so every
@@ -381,6 +388,31 @@ gap_timeout = "200ms"
 HRM = { enable_flow_tap = true, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 TL = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 TLI = { enable_flow_tap = false, hold_on_other_press = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+
+# ============================================================================
+# MACROS — used by the MOUSE layer for multi-click actions RMK has no native
+# keycode for. Index 0/1 below map to Macro0/Macro1 in the layer `keys`
+# strings (macros are referenced by definition order, 0-indexed). Each Tap
+# of MouseBtn1 is a real press+release of the left mouse button (requires
+# the vendor/rmk macro-engine mouse-dispatch patch — see keyboard.rs); the
+# 30ms delay between taps keeps the two/three clicks from being coalesced
+# by the host into a single click.
+# ============================================================================
+[[behavior.macro.macros]]  # Macro0 — double-click
+operations = [
+    { operation = "tap", keycode = "MouseBtn1" },
+    { operation = "delay", duration = "30ms" },
+    { operation = "tap", keycode = "MouseBtn1" },
+]
+
+[[behavior.macro.macros]]  # Macro1 — triple-click
+operations = [
+    { operation = "tap", keycode = "MouseBtn1" },
+    { operation = "delay", duration = "30ms" },
+    { operation = "tap", keycode = "MouseBtn1" },
+    { operation = "delay", duration = "30ms" },
+    { operation = "tap", keycode = "MouseBtn1" },
+]
 
 # ============================================================================
 # SPLIT — how the two halves relate. The halves talk to each other over BLE;

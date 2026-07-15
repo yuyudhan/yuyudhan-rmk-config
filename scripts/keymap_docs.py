@@ -58,6 +58,9 @@ KEYCODE_DISPLAY: dict[str, str] = {
     "MouseWheelLeft": "W←", "MouseWheelDown": "W↓",
     "MouseWheelUp": "W↑", "MouseWheelRight": "W→",
     "MouseBtn1": "LMB", "MouseBtn2": "RMB", "MouseBtn3": "MMB",
+    "MouseBtn4": "Back", "MouseBtn5": "Fwd",
+    "MouseAccel0": "Slow", "MouseAccel2": "Fast",
+    "Macro0": "2×Click", "Macro1": "3×Click",
     # Bluetooth / output User keys  (ble_profiles_num = 4)
     "User0": "BT0", "User1": "BT1", "User2": "BT2", "User3": "BT3",
     "User6": "ClrBT", "User7": "Out⇄",
@@ -112,7 +115,7 @@ LAYER_DESC: dict[str, str] = {
     "MEDIA": "hold Esc — volume, brightness, media transport, Bluetooth (BT0–3 / clear / USB-BLE toggle)",
     "SYM":   "hold Enter — programmer symbols on left hand",
     "FUN":   "hold Del — F1–F12 + screenshot ⇧⌘4 (file) / ⌃⇧⌘4 (clipboard) + Caps Word",
-    "MOUSE": "hold Tab — pointer move, scroll wheel, mouse buttons",
+    "MOUSE": "hold Tab — pointer move, scroll wheel, double/triple click, Back/Forward, speed control",
     "DISPOFF": "TG(7) from MEDIA — blanks both OLED displays; toggle again to restore",
 }
 
