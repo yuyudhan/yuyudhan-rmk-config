@@ -7,6 +7,7 @@
 
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::*;
+use embedded_graphics::primitives::{Polyline, PrimitiveStyle};
 
 /// Devanagari Om (U+0950), 30 cols × 24 rows (3 SSD1306 pages), page format.
 /// Rasterised from `/System/Library/Fonts/Kohinoor.ttc` (index 0), U+0950,
@@ -67,4 +68,27 @@ pub fn draw_page_format_frame<D: DrawTarget<Color = BinaryColor>>(
             }
         }
     }
+}
+
+/// True when external power (VBUS/charger) is present on this half.
+/// Reads the nRF52840 POWER.USBREGSTATUS.VBUSDETECT status bit directly
+/// (hardware-maintained, valid without the USB stack running).
+#[inline]
+pub fn on_external_power() -> bool {
+    embassy_nrf::pac::POWER.usbregstatus().read().vbusdetect()
+}
+
+/// Draw a lightning-bolt glyph (charging indicator) with its bounding box's
+/// top-left at (ox, oy). Occupies ~8 px wide x 14 px tall.
+pub fn draw_charging_bolt<D: DrawTarget<Color = BinaryColor>>(display: &mut D, ox: i32, oy: i32) {
+    let pts = [
+        Point::new(ox + 7, oy),
+        Point::new(ox + 1, oy + 8),
+        Point::new(ox + 5, oy + 8),
+        Point::new(ox + 2, oy + 14),
+    ];
+    Polyline::new(&pts)
+        .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 3))
+        .draw(display)
+        .ok();
 }

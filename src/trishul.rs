@@ -34,7 +34,7 @@ use rmk::display::{DisplayRenderer, RenderContext};
 use rmk::heapless::String;
 use rmk::types::battery::BatteryStatus;
 use crate::layer_names::DISPLAY_OFF_LAYER;
-use crate::bitmaps::{OM, draw_page_format_frame};
+use crate::bitmaps::{OM, draw_page_format_frame, on_external_power};
 
 /// Trishul pointing up — three barbed prongs, outer prongs arc down into shaft,
 /// crossbar, damaru diamond mid-shaft, round pommel.
@@ -195,37 +195,47 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
             .draw(display)
             .ok();
 
+        let charging = on_external_power();
         let mut bat_num: String<4> = String::new();
-        match *ctx.battery {
-            BatteryStatus::Available { level: Some(pct), .. } => {
-                // Fill: blinks at <20% (low battery warning).
-                let draw_fill = pct >= 20 || self.tick % 2 == 0;
-                if draw_fill {
-                    let fill_w = (pct as u32 * 24 / 100).max(1);
-                    Rectangle::new(Point::new(4, 106), Size::new(fill_w, 5))
-                        .into_styled(fill_on)
-                        .draw(display)
-                        .ok();
-                }
-                let _ = write!(bat_num, "{}", pct);
-            }
-            BatteryStatus::Available { level: None, .. } => {
-                // Level reading unavailable — show "--" as the number.
-                let _ = write!(bat_num, "--");
-            }
-            BatteryStatus::Unavailable => {
-                let _ = write!(bat_num, "?");
-            }
-        }
-
-        // ── 9. Battery number (rows 113–127) ─────────────────────────────────
-        // Centred in 32 px; FONT_9X15 advance = 9 px/char.
-        // "%" omitted — "100" (27 px) fits; "100%" (36 px) would overflow.
-        if !bat_num.is_empty() {
-            let x = (32 - bat_num.len() as i32 * 9) / 2;
-            Text::with_baseline(&bat_num, Point::new(x.max(0), 113), big, Baseline::Top)
+        if charging {
+            let sweep = (((self.tick as u32) % 9) * 24 / 8).clamp(1, 24);
+            Rectangle::new(Point::new(4, 106), Size::new(sweep, 5))
+                .into_styled(fill_on)
                 .draw(display)
                 .ok();
+            crate::bitmaps::draw_charging_bolt(display, 12, 113);
+        } else {
+            match *ctx.battery {
+                BatteryStatus::Available { level: Some(pct), .. } => {
+                    // Fill: blinks at <20% (low battery warning).
+                    let draw_fill = pct >= 20 || self.tick % 2 == 0;
+                    if draw_fill {
+                        let fill_w = (pct as u32 * 24 / 100).max(1);
+                        Rectangle::new(Point::new(4, 106), Size::new(fill_w, 5))
+                            .into_styled(fill_on)
+                            .draw(display)
+                            .ok();
+                    }
+                    let _ = write!(bat_num, "{}", pct);
+                }
+                BatteryStatus::Available { level: None, .. } => {
+                    // Level reading unavailable — show "--" as the number.
+                    let _ = write!(bat_num, "--");
+                }
+                BatteryStatus::Unavailable => {
+                    let _ = write!(bat_num, "?");
+                }
+            }
+
+            // ── 9. Battery number (rows 113–127) ─────────────────────────────────
+            // Centred in 32 px; FONT_9X15 advance = 9 px/char.
+            // "%" omitted — "100" (27 px) fits; "100%" (36 px) would overflow.
+            if !bat_num.is_empty() {
+                let x = (32 - bat_num.len() as i32 * 9) / 2;
+                Text::with_baseline(&bat_num, Point::new(x.max(0), 113), big, Baseline::Top)
+                    .draw(display)
+                    .ok();
+            }
         }
     }
 }

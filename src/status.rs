@@ -33,7 +33,7 @@ use rmk::heapless::String;
 use rmk::types::battery::BatteryStatus;
 use rmk::types::ble::BleState;
 use crate::layer_names::{DISPLAY_OFF_LAYER, LAYER_NAMES};
-use crate::bitmaps::{OM, draw_page_format_frame};
+use crate::bitmaps::{OM, draw_page_format_frame, on_external_power};
 
 /// Firmware version, embedded at build time from the repo-root `VERSION` file
 /// (see build.rs). Shown on the central OLED as `{FW_VERSION}` so you can read
@@ -153,36 +153,41 @@ impl DisplayRenderer<BinaryColor> for StatusRenderer {
             .draw(display)
             .ok();
 
+        let charging = on_external_power();
         let mut bat_num: String<4> = String::new();
-        match *ctx.battery {
-            BatteryStatus::Available { level: Some(pct), .. } => {
-                // Fill width proportional to percentage (max 24 px inside the outline).
-                // No blink here: central has no tick counter (event-driven only).
-                // Low battery (<20%): show fill at all times; the small number is warning enough.
-                let fill_w = (pct as u32 * 24 / 100).max(1);
-                Rectangle::new(Point::new(4, 89), Size::new(fill_w, 5))
-                    .into_styled(fill_on)
+        if charging {
+            crate::bitmaps::draw_charging_bolt(display, 12, 98);
+        } else {
+            match *ctx.battery {
+                BatteryStatus::Available { level: Some(pct), .. } => {
+                    // Fill width proportional to percentage (max 24 px inside the outline).
+                    // No blink here: central has no tick counter (event-driven only).
+                    // Low battery (<20%): show fill at all times; the small number is warning enough.
+                    let fill_w = (pct as u32 * 24 / 100).max(1);
+                    Rectangle::new(Point::new(4, 89), Size::new(fill_w, 5))
+                        .into_styled(fill_on)
+                        .draw(display)
+                        .ok();
+                    let _ = write!(bat_num, "{}", pct);
+                }
+                BatteryStatus::Available { level: None, .. } => {
+                    // Level reading unavailable — show "--" as the number.
+                    let _ = write!(bat_num, "--");
+                }
+                BatteryStatus::Unavailable => {
+                    let _ = write!(bat_num, "?");
+                }
+            }
+
+            // ── 7. Battery number (rows 98–112) ──────────────────────────────────
+            // FONT_9X15_BOLD (15 px), centred.  No "%" — gauge provides context;
+            // "100%" (36 px) would overflow the 32 px width.
+            if !bat_num.is_empty() {
+                let bat_x = ((32 - bat_num.len() as i32 * 9) / 2).max(0);
+                Text::with_baseline(&bat_num, Point::new(bat_x, 98), big, Baseline::Top)
                     .draw(display)
                     .ok();
-                let _ = write!(bat_num, "{}", pct);
             }
-            BatteryStatus::Available { level: None, .. } => {
-                // Level reading unavailable — show "--" as the number.
-                let _ = write!(bat_num, "--");
-            }
-            BatteryStatus::Unavailable => {
-                let _ = write!(bat_num, "?");
-            }
-        }
-
-        // ── 7. Battery number (rows 98–112) ──────────────────────────────────
-        // FONT_9X15_BOLD (15 px), centred.  No "%" — gauge provides context;
-        // "100%" (36 px) would overflow the 32 px width.
-        if !bat_num.is_empty() {
-            let bat_x = ((32 - bat_num.len() as i32 * 9) / 2).max(0);
-            Text::with_baseline(&bat_num, Point::new(bat_x, 98), big, Baseline::Top)
-                .draw(display)
-                .ok();
         }
 
         // ── 8. Firmware version (rows 116–127) ───────────────────────────────
