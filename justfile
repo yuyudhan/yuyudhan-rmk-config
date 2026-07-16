@@ -111,8 +111,10 @@ expand target="left":
 # Flash the newest built .uf2 onto a mounted NICENANO drive. target = left | right.
 # Double-tap the reset button on the target half FIRST so it mounts as {{NICENANO}}.
 # Pulls the newest matching .uf2 from firmware/<datetime>/ (falls back to repo root).
-# e.g. `just flash left`   then   `just flash right`   (flashing is destructive)
-flash target:
+# e.g. `just flash left`         -> newest build
+#      `just flash left 0.0.8`   -> newest archive matching y0.0.8
+# (flashing is destructive)
+flash target ver="":
     #!/usr/bin/env bash
     set -euo pipefail
     case "{{target}}" in
@@ -120,11 +122,19 @@ flash target:
       right) name="rmk-peripheral.uf2" ;;
       *) echo "Unknown target: {{target}}  (valid: left | right)" >&2; exit 1 ;;
     esac
-    # Newest archived copy by mtime, else the loose repo-root build.
-    file="$(ls -1t firmware/*/"$name" 2>/dev/null | head -1 || true)"
-    [ -z "$file" ] && [ -f "$name" ] && file="$name"
-    if [ -z "$file" ]; then
-      echo "No $name found. Build it first: just build {{target}}" >&2; exit 1
+    # Newest archived copy by mtime (optionally filtered by version), else the
+    # loose repo-root build.
+    if [ -n "{{ver}}" ]; then
+      file="$(ls -1t firmware/*_y{{ver}}/"$name" 2>/dev/null | head -1 || true)"
+      if [ -z "$file" ]; then
+        echo "No $name found for version y{{ver}} in firmware/." >&2; exit 1
+      fi
+    else
+      file="$(ls -1t firmware/*/"$name" 2>/dev/null | head -1 || true)"
+      [ -z "$file" ] && [ -f "$name" ] && file="$name"
+      if [ -z "$file" ]; then
+        echo "No $name found. Build it first: just build {{target}}" >&2; exit 1
+      fi
     fi
     if [ ! -d "{{NICENANO}}" ]; then
       echo "{{NICENANO}} not mounted. Double-tap reset on the {{target}} half, then re-run." >&2; exit 1
