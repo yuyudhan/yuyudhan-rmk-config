@@ -191,15 +191,17 @@ impl DisplayRenderer<BinaryColor> for StatusRenderer {
         }
 
         // ── 8. Firmware version (rows 116–127) ───────────────────────────────
-        // "{version}" in FONT_6X12 (6 px/char, 12 px tall), no "y" prefix, centred.
-        // Current value "0.0.6" = 5 chars × 6 px = 30 px, fits inside the 32 px
-        // canvas with 1 px margin each side. A version growing past 5 chars
-        // (e.g. a two-digit segment) will overflow and clip on the right —
-        // accepted tradeoff for a visibly larger, legible glyph.
-        let ver_style = MonoTextStyle::new(&FONT_6X12, BinaryColor::On);
+        // "{version}", no "y" prefix, centred.  FONT_6X12 (6 px/char) while the
+        // string fits (≤5 chars); falls back to FONT_5X8 (5 px/char) for longer
+        // versions like "0.0.11" (6 × 5 = 30 px) so it never clips the 32 px width.
         let mut ver_buf: String<12> = String::new();
         let _ = write!(ver_buf, "{}", FW_VERSION);
-        let ver_x = ((32 - ver_buf.len() as i32 * 6) / 2).max(0);
+        let (ver_style, ver_adv) = if ver_buf.len() <= 5 {
+            (MonoTextStyle::new(&FONT_6X12, BinaryColor::On), 6)
+        } else {
+            (MonoTextStyle::new(&FONT_5X8, BinaryColor::On), 5)
+        };
+        let ver_x = ((32 - ver_buf.len() as i32 * ver_adv) / 2).max(0);
         Text::with_baseline(&ver_buf, Point::new(ver_x, 116), ver_style, Baseline::Top)
             .draw(display)
             .ok();
