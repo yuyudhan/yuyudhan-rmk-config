@@ -59,8 +59,6 @@ KEYCODE_DISPLAY: dict[str, str] = {
     "MouseWheelUp": "W↑", "MouseWheelRight": "W→",
     "MouseBtn1": "LMB", "MouseBtn2": "RMB", "MouseBtn3": "MMB",
     "MouseBtn4": "Back", "MouseBtn5": "Fwd",
-    "MouseAccel0": "Slow", "MouseAccel2": "Fast",
-    "Macro0": "2×Click", "Macro1": "3×Click",
     # Bluetooth / output User keys  (ble_profiles_num = 4)
     "User0": "BT0", "User1": "BT1", "User2": "BT2", "User3": "BT3",
     "User4": "BT→", "User5": "BT←",
