@@ -39,6 +39,11 @@ chip = "nrf52840"
 [rmk]
 ble_profiles_num = 4
 
+# Idle auto-sleep: after this many seconds with no key/pointing activity the
+# split CENTRAL drops its BLE PHY/conn params and sleeps to save battery;
+# any keypress wakes it. 0 = disabled (RMK default). 300 = 5 minutes.
+split_central_sleep_timeout_seconds = 300
+
 # ----------------------------------------------------------------------------
 # On-chip flash storage, default settings (empty table = enabled, defaults).
 # This is what makes things SURVIVE POWER-OFF: Vial live-remaps, BLE bonds,
@@ -53,6 +58,7 @@ ble_profiles_num = 4
 #   2. power both on once, wait for the halves to link (X -> check mark)
 #   3. DELETE this flag (or set false), rebuild both, reflash BOTH halves
 # If you leave it on, every battery swap forgets all pairings.
+# clear_layout = true  (resets ONLY stored keymap to compiled default; bonds kept)
 # clear_storage = true
 
 # ----------------------------------------------------------------------------
