@@ -205,17 +205,16 @@ Z                X                C                V                B           
 """
 
 # Layer 1 — NAV (hold SPACE). Vim-style arrows on the right home row (HJKL
-# positions), Home/PgDn/PgUp/End below them, document nav + zoom
-# (Cmd-[/Cmd-]/Cmd--/Cmd-+/Cmd-0) on the top-left row, window/app switching
-# (Cmd-`/Cmd-Shift-`/Cmd-Tab/Cmd-Shift-Tab/Cmd-Space) on the top-right row.
-# Left home row pre-holds plain GACS mods so e.g. Space+LShift+Right selects
-# text word-by-word without leaving the layer.
+# positions), Home/End on the top-right row, PgDn/PgUp below the arrows.
+# Top-left row (Q/W/E/R/T) is unused/free. Left home row pre-holds plain GACS
+# mods so e.g. Space+LShift+Right selects text word-by-word without leaving
+# the layer.
 [[layer]]
 name = "NAV"
 keys = """
-WM(LeftBracket, LGui) WM(RightBracket, LGui) WM(Minus, LGui) WM(Equal, LGui) WM(Kc0, LGui)   WM(Grave, LGui) WM(Grave, LGui | LShift) WM(Tab, LGui) WM(Tab, LGui | LShift) WM(Space, LGui)
-LGui LAlt LCtrl LShift No                     Left      Down      Up        Right     CapsLock
-No   No   No   No   No                        Home      PageDown  PageUp    End       Insert
+No   No   No   No   No                        No        End       Home      No        CapsLock
+LGui LAlt LCtrl LShift No                     Left      Down      Up        Right     CapsWordToggle
+No   No   No   No   No                        No        PageDown  PageUp    No        Insert
                No   No   No                   Enter     Backspace Delete
 """
 
@@ -234,16 +233,17 @@ Grave       Kc1 Kc2 Kc3 Backslash             No No No No No
 
 # Layer 3 — MEDIA (hold ESCAPE). Volume/brightness/media transport plus all
 # Bluetooth management (see ble_profiles_num for the User* decoding):
-#   User0-3 = select BT profile 0-3      User6 = clear bond of CURRENT profile
-#   User7   = toggle output USB <-> BLE  User9 = clear bonds of ALL profiles
+#   User4 = next BT profile              User5 = previous BT profile
+#   User2-3 = select BT profile 2-3       User6 = clear bond of CURRENT profile
+#   User7   = toggle output USB <-> BLE   User9 = clear bonds of ALL profiles
 #   TG(7)   = blank both OLEDs (see layer 7)
 # Y key: WM(Q, LCtrl|LGui) = lock screen (macOS).
 [[layer]]
 name = "MEDIA"
 keys = """
 No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 User9
-LGui LAlt LCtrl LShift No                      TG(7)        AudioVolDown   AudioVolUp   MediaPrevTrack MediaNextTrack
-No   No   No   No   No                         User7        User0          User1        User2          User3
+LGui LAlt LCtrl LShift No                      TG(7)        AudioVolDown   AudioVolUp   User0          User1
+No   No   No   No   No                         User7        MediaNextTrack MediaPrevTrack User2         User3
                No   No   No                    MediaStop    MediaPlayPause AudioMute
 """
 
@@ -260,16 +260,15 @@ SHIFTED(Grave)       SHIFTED(Kc1) SHIFTED(Kc2) SHIFTED(Kc3) SHIFTED(Backslash)  
 """
 
 # Layer 5 — FUN (hold DELETE). F-keys in the same columnar shape as NUM
-# (F7-F9 / F4-F6 / F1-F3, F10-F12 on the outer column) + macOS utilities on
-# the right edge of the left hand: region screenshot to file (Cmd+Shift+4),
-# region screenshot to clipboard (Cmd+Ctrl+Shift+4), and Caps Word (caps for
-# the next word only; `-` becomes `_`, space/punctuation or 5s idle ends it).
+# (F7-F9 / F4-F6 / F1-F3, F10-F12 on the outer column) + macOS region
+# screenshot to file (Cmd+Shift+4) on the right edge of the left hand.
+# G position freed (no binding).
 [[layer]]
 name = "FUN"
 keys = """
 F12 F7 F8 F9 WM(Kc4, LShift | LGui)             No No No No No
-F11 F4 F5 F6 WM(Kc4, LCtrl | LShift | LGui)     No RShift RCtrl RAlt RGui
-F10 F1 F2 F3 CapsWordToggle                     No No No No No
+F11 F4 F5 F6 No                                 No RShift RCtrl RAlt RGui
+F10 F1 F2 F3 No                                 No No No No No
            Menu Space Tab                       No No No
 """
 

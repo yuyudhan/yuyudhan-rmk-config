@@ -26,11 +26,11 @@ One profile, one keymap. Everything lives in `config/keyboard.toml`; there is no
 | Layer | Thumb (hold) | Contents |
 |-------|--------------|----------|
 | 0 BASE | — | QWERTY + GACS home-row mods (A/S/D/F = GUI/Alt/Ctrl/Shift, mirrored J/K/L/') |
-| 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn, doc nav/zoom (⌘[/⌘]/⌘−/⌘+/⌘0), window/app switching (⌘`/⌘⇧`/⌘Tab/⌘⇧Tab/⌘Space) |
+| 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn |
 | 2 NUM | Backspace | columnar numpad + brackets/symbols on the left hand |
 | 3 MEDIA | Escape | volume, brightness, media transport, Bluetooth (BT0–3 / clear current / clear all / USB-BLE toggle), lock |
 | 4 SYM | Enter | programmer symbols on the left hand |
-| 5 FUN | Delete | F1–F12 + screenshot ⇧⌘4 (file) / ⌃⇧⌘4 (clipboard) + Caps Word |
+| 5 FUN | Delete | F1–F12 + screenshot ⇧⌘4 (file) + Caps Word |
 | 6 MOUSE | Tab | pointer move, scroll wheel, mouse buttons |
 
 **Home-row mods** use the `HRM` morse profile (permissive-hold + unilateral-tap + flow-tap,

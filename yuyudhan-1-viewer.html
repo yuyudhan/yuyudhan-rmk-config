@@ -357,23 +357,23 @@ body { background: var(--bg); color: var(--tap-color); }
   </div>
 </section>
 <section class="layer" id="layer-1" data-index="1">
-  <div class="layer-header"><h2><span class="layer-num">1</span> NAV</h2><p class="layer-desc">hold Space — vim arrows HJKL, Home/End/PgUp/PgDn, clipboard (⌘Z/X/C/V, ⌘⇧Z redo), Caps</p></div>
+  <div class="layer-header"><h2><span class="layer-num">1</span> NAV</h2><p class="layer-desc">hold Space — vim arrows HJKL, Home/End/PgUp/PgDn, Caps</p></div>
   <div class="keyboard">
     <div class="kb-row">
       <div class="kb-half">
-        <div class="key"><span class="tap">⌘[</span></div>
-        <div class="key"><span class="tap">⌘]</span></div>
-        <div class="key"><span class="tap">⌘-</span></div>
-        <div class="key"><span class="tap">⌘=</span></div>
-        <div class="key"><span class="tap">⌘0</span></div>
+        <div class="key empty"><span class="tap"></span></div>
+        <div class="key empty"><span class="tap"></span></div>
+        <div class="key empty"><span class="tap"></span></div>
+        <div class="key empty"><span class="tap"></span></div>
+        <div class="key empty"><span class="tap"></span></div>
       </div>
       <div class="kb-split-gap"></div>
       <div class="kb-half">
-        <div class="key"><span class="tap">⌘`</span></div>
-        <div class="key"><span class="tap">⌘⇧`</span></div>
-        <div class="key"><span class="tap">⌘Tab</span></div>
-        <div class="key"><span class="tap">⌘⇧Tab</span></div>
-        <div class="key"><span class="tap">⌘Spc</span></div>
+        <div class="key empty"><span class="tap"></span></div>
+        <div class="key"><span class="tap">End</span></div>
+        <div class="key"><span class="tap">Home</span></div>
+        <div class="key empty"><span class="tap"></span></div>
+        <div class="key"><span class="tap">Caps</span></div>
       </div>
     </div>
     <div class="kb-row">
@@ -390,7 +390,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">↓</span></div>
         <div class="key"><span class="tap">↑</span></div>
         <div class="key"><span class="tap">→</span></div>
-        <div class="key"><span class="tap">Caps</span></div>
+        <div class="key"><span class="tap">CapsWd</span></div>
       </div>
     </div>
     <div class="kb-row">
@@ -403,10 +403,10 @@ body { background: var(--bg); color: var(--tap-color); }
       </div>
       <div class="kb-split-gap"></div>
       <div class="kb-half">
-        <div class="key"><span class="tap">Home</span></div>
+        <div class="key empty"><span class="tap"></span></div>
         <div class="key"><span class="tap">PgDn</span></div>
         <div class="key"><span class="tap">PgUp</span></div>
-        <div class="key"><span class="tap">End</span></div>
+        <div class="key empty"><span class="tap"></span></div>
         <div class="key"><span class="tap">Ins</span></div>
       </div>
     </div>
@@ -531,8 +531,8 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">TG(7)</span></div>
         <div class="key"><span class="tap">Vol-</span></div>
         <div class="key"><span class="tap">Vol+</span></div>
-        <div class="key"><span class="tap">Prev</span></div>
-        <div class="key"><span class="tap">Next</span></div>
+        <div class="key"><span class="tap">BT0</span></div>
+        <div class="key"><span class="tap">BT1</span></div>
       </div>
     </div>
     <div class="kb-row">
@@ -546,8 +546,8 @@ body { background: var(--bg); color: var(--tap-color); }
       <div class="kb-split-gap"></div>
       <div class="kb-half">
         <div class="key"><span class="tap">Out⇄</span></div>
-        <div class="key"><span class="tap">BT0</span></div>
-        <div class="key"><span class="tap">BT1</span></div>
+        <div class="key"><span class="tap">Next</span></div>
+        <div class="key"><span class="tap">Prev</span></div>
         <div class="key"><span class="tap">BT2</span></div>
         <div class="key"><span class="tap">BT3</span></div>
       </div>
@@ -641,7 +641,7 @@ body { background: var(--bg); color: var(--tap-color); }
   </div>
 </section>
 <section class="layer" id="layer-5" data-index="5">
-  <div class="layer-header"><h2><span class="layer-num">5</span> FUN</h2><p class="layer-desc">hold Del — F1–F12 + screenshot ⇧⌘4 (file) / ⌃⇧⌘4 (clipboard) + Caps Word</p></div>
+  <div class="layer-header"><h2><span class="layer-num">5</span> FUN</h2><p class="layer-desc">hold Del — F1–F12 + screenshot ⇧⌘4 (file) + Caps Word</p></div>
   <div class="keyboard">
     <div class="kb-row">
       <div class="kb-half">
@@ -666,7 +666,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">F4</span></div>
         <div class="key"><span class="tap">F5</span></div>
         <div class="key"><span class="tap">F6</span></div>
-        <div class="key"><span class="tap">⌃⇧⌘4</span></div>
+        <div class="key empty"><span class="tap"></span></div>
       </div>
       <div class="kb-split-gap"></div>
       <div class="kb-half">
@@ -683,7 +683,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">F1</span></div>
         <div class="key"><span class="tap">F2</span></div>
         <div class="key"><span class="tap">F3</span></div>
-        <div class="key"><span class="tap">CapsWd</span></div>
+        <div class="key empty"><span class="tap"></span></div>
       </div>
       <div class="kb-split-gap"></div>
       <div class="kb-half">
