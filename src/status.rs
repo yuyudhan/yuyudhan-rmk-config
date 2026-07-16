@@ -11,7 +11,7 @@
 //!   rows  77-84   BLE state "~" / "USB" FONT_5X8 (blank when connected)
 //!   rows  87-95   Battery gauge (outline + proportional fill; blinks at <20%)
 //!   rows  98-112  Battery number FONT_9X15_BOLD (centred; no "%" — gauge supplies it)
-//!   rows 117-123  Firmware version "y{ver}" FONT_4X6 (centred; from VERSION file)
+//!   rows 116-127  Firmware version "{ver}" FONT_6X12 (centred; from VERSION file)
 //!
 //! No SCAG modifier display — removed per user request.
 //! No `render_interval` — all draws are event-driven (layer/BLE/WPM/battery changes),
@@ -23,7 +23,7 @@
 use core::fmt::Write as _;
 
 use embedded_graphics::mono_font::MonoTextStyle;
-use embedded_graphics::mono_font::ascii::{FONT_4X6, FONT_5X8, FONT_6X10, FONT_9X15_BOLD};
+use embedded_graphics::mono_font::ascii::{FONT_5X8, FONT_6X10, FONT_6X12, FONT_9X15_BOLD};
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
@@ -36,7 +36,7 @@ use crate::layer_names::{DISPLAY_OFF_LAYER, LAYER_NAMES};
 use crate::bitmaps::{OM, draw_page_format_frame};
 
 /// Firmware version, embedded at build time from the repo-root `VERSION` file
-/// (see build.rs). Shown on the central OLED as `y{FW_VERSION}` so you can read
+/// (see build.rs). Shown on the central OLED as `{FW_VERSION}` so you can read
 /// off exactly which build is flashed.
 const FW_VERSION: &str = env!("YUYUDHAN_FW_VERSION");
 
@@ -185,15 +185,17 @@ impl DisplayRenderer<BinaryColor> for StatusRenderer {
                 .ok();
         }
 
-        // ── 8. Firmware version (rows 117–123) ───────────────────────────────
-        // "y{version}" in FONT_4X6 (4 px/char), centred. FONT_4X6 (not 5X8) so
-        // multi-digit bumps still fit: "y0.0.100" = 8 chars × 4 px = 32 px, the
-        // full width. Tells you which build is flashed.
-        let ver_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
+        // ── 8. Firmware version (rows 116–127) ───────────────────────────────
+        // "{version}" in FONT_6X12 (6 px/char, 12 px tall), no "y" prefix, centred.
+        // Current value "0.0.6" = 5 chars × 6 px = 30 px, fits inside the 32 px
+        // canvas with 1 px margin each side. A version growing past 5 chars
+        // (e.g. a two-digit segment) will overflow and clip on the right —
+        // accepted tradeoff for a visibly larger, legible glyph.
+        let ver_style = MonoTextStyle::new(&FONT_6X12, BinaryColor::On);
         let mut ver_buf: String<12> = String::new();
-        let _ = write!(ver_buf, "y{}", FW_VERSION);
-        let ver_x = ((32 - ver_buf.len() as i32 * 4) / 2).max(0);
-        Text::with_baseline(&ver_buf, Point::new(ver_x, 117), ver_style, Baseline::Top)
+        let _ = write!(ver_buf, "{}", FW_VERSION);
+        let ver_x = ((32 - ver_buf.len() as i32 * 6) / 2).max(0);
+        Text::with_baseline(&ver_buf, Point::new(ver_x, 116), ver_style, Baseline::Top)
             .draw(display)
             .ok();
     }

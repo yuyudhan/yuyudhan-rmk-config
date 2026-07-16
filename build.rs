@@ -27,7 +27,7 @@ fn main() {
 
     // Firmware version: single source of truth is the repo-root `VERSION` file
     // (e.g. `0.0.1`). Embedded as a compile-time env var read via
-    // `env!("YUYUDHAN_FW_VERSION")` and shown on the central OLED as `y{ver}`.
+    // `env!("YUYUDHAN_FW_VERSION")` and shown on the central OLED as `{ver}`.
     // Editing VERSION triggers a rebuild via rerun-if-changed below.
     println!("cargo:rerun-if-changed=VERSION");
     let fw_version = fs::read_to_string("VERSION")
