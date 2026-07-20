@@ -312,31 +312,31 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
 # (modifier/layer)?" Four knobs decide it; here's each one in real typing
 # terms:
 #
-# hold_timeout = 200ms
+# hold_timeout = 100ms
 #   The press-and-wait threshold. Press a dual key ALONE and keep it down
-#   past 200ms -> hold (mod/layer). Release sooner -> tap (letter).
+#   past 100ms -> hold (mod/layer). Release sooner -> tap (letter).
 #   Lower = mods fire faster but fast typing misfires more; higher = safer
 #   typing but you must consciously wait longer for a chord.
 #
-# enable_flow_tap + prior_idle_time = 150ms   ("am I mid-word?")
-#   If ANY other key was pressed less than 150ms before a dual key goes
+# enable_flow_tap + prior_idle_time = 80ms   ("am I mid-word?")
+#   If ANY other key was pressed less than 80ms before a dual key goes
 #   down, the firmware decides TAP instantly — no waiting, no misfire.
 #   This is the main defence against rolls like "ds" firing Ctrl mid-word,
 #   and cross-hand rolls like "an" firing Cmd+N.
-#   Consequence: to USE a home-row mod you must pause >=150ms first —
+#   Consequence: to USE a home-row mod you must pause >=80ms first —
 #   which you naturally do before a deliberate shortcut like Ctrl+C.
 #   Tuned for ~87 WPM (~138ms between keystrokes): lowered 120ms -> 100ms ->
 #   90ms because deliberate chords (Ctrl via D) kept resolving as letters,
-#   then raised back to 150ms because 90ms sat below the ~138ms average
-#   inter-keystroke gap, so fast rolls like "an" escaped flow-tap and
-#   misfired as Cmd+N. If mods start firing mid-word again, raise further;
-#   if deliberate chords start resolving as letters, drop toward 130ms.
+#   then raised to 150ms because 90ms sat below the ~138ms average
+#   inter-keystroke gap, then dropped back to 80ms by explicit choice.
+#   80ms sits below the average inter-keystroke gap, so fast rolls may
+#   escape flow-tap and misfire as mods again — if that happens, raise it.
 #   NOTE: prior_idle_time is GLOBAL (this top-level table only); profiles
-#   can switch flow-tap on/off but all share this 150ms window.
+#   can switch flow-tap on/off but all share this 80ms window.
 #
 # permissive_hold (per-profile below)   ("nested press = intentional chord")
 #   While the dual key is down, if another key is pressed AND RELEASED
-#   before you let go, resolve HOLD immediately — even before 200ms.
+#   before you let go, resolve HOLD immediately — even before 100ms.
 #   Typing "F(down) J(down) J(up) F(up)" quickly = Shift+J. This is what
 #   makes deliberate chords feel instant instead of laggy.
 #
@@ -352,9 +352,9 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
 #   that define them. Pure MT()/LT() keys define only TAP and HOLD, so this
 #   is INERT here.
 #   Letter auto-repeat on dual keys depends on WHEN you press:
-#   - mid-streak (within the 150ms flow-tap window): the letter's press is
+#   - mid-streak (within the 80ms flow-tap window): the letter's press is
 #     sent and held while the key is down -> OS auto-repeat works ("dddd...").
-#   - after a pause (>=150ms idle): holding resolves as mod/layer at 200ms —
+#   - after a pause (>=80ms idle): holding resolves as mod/layer at 100ms —
 #     no letter repeat. To repeat a home-row letter, keep it inside a streak.
 #
 # Profiles — referenced by name in MT(...)/LT(...) above:
@@ -375,7 +375,7 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
 # TLI (Enter=SYM and Backspace=NUM only — the character-entry layers):
 #   hold_on_other_press — the layer activates THE INSTANT any other key
 #   goes down while the thumb is held. No release-order requirement, no
-#   200ms wait: Bspc(down) D(down) is already NUM, so D = 5 even if the
+#   100ms wait: Bspc(down) D(down) is already NUM, so D = 5 even if the
 #   thumb lifts first (the rolled release that made 5 come out as "d"
 #   under permissive-hold). Known trade-off, accepted deliberately: a fast
 #   tap-then-letter roll on these two thumbs misfires as a layer key
@@ -386,14 +386,14 @@ _______ _______ _______ _______ _______        _______ _______ _______ _______ _
 # ============================================================================
 [behavior.morse]
 enable_flow_tap = true
-prior_idle_time = "150ms"
-hold_timeout = "200ms"
+prior_idle_time = "80ms"
+hold_timeout = "100ms"
 gap_timeout = "200ms"
 
 [behavior.morse.profiles]
-HRM = { enable_flow_tap = true, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
-TL = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
-TLI = { enable_flow_tap = false, hold_on_other_press = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+HRM = { enable_flow_tap = true, permissive_hold = true, unilateral_tap = true, hold_timeout = "100ms", gap_timeout = "200ms" }
+TL = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "100ms", gap_timeout = "200ms" }
+TLI = { enable_flow_tap = false, hold_on_other_press = true, hold_timeout = "100ms", gap_timeout = "200ms" }
 
 # ============================================================================
 # SPLIT — how the two halves relate. The halves talk to each other over BLE;
