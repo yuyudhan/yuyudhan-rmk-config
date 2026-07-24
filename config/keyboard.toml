@@ -107,14 +107,11 @@ unlock_keys = [[3, 3], [3, 4]]
 # columns 3-8. So `rows = 4` / `cols = 12` below describe the WIRING and
 # must never be changed to 3; with rows = 3 the thumbs would never scan.
 #
-# matrix_map is the filter from 48 wired positions down to the 40 keys THIS
-# LAYOUT USES: note its shape below — two rows of 12 (outer pinky columns 0
-# and 11 mapped on the top two rows: Hyper on row 0, Meh on row 1), one row
-# of 10, then one row of 6 thumbs. The bottom-row outer positions (2,0)/(2,11)
-# remain INTENTIONALLY UNMAPPED — pressing them does nothing. Thumb columns
-# 0-2 / 9-11 have no switches at all. To map the remaining pair: add (2,0,L)
-# and (2,11,R) to matrix_map and one token per new key in every
-# [[layer]].keys block.
+# matrix_map is the filter from 48 wired positions down to the 42 keys THIS
+# LAYOUT USES: note its shape below — three rows of 12 (outer pinky columns 0
+# and 11 mapped on all three finger rows: Hyper on row 0, Meh on row 1,
+# Ctrl+Alt on row 2) plus one row of 6 thumbs. Thumb columns 0-2 / 9-11
+# have no switches at all, so all 42 physical keys are now mapped.
 #
 # matrix_map also fixes the READING ORDER: the Nth token in every
 # [[layer]].keys block below binds to the Nth (row,col) entry here.
@@ -134,7 +131,7 @@ layers = 8
 matrix_map = """
 (0,0,L) (0,1,L) (0,2,L) (0,3,L) (0,4,L) (0,5,L)   (0,6,R) (0,7,R) (0,8,R) (0,9,R) (0,10,R) (0,11,R)
 (1,0,L) (1,1,L) (1,2,L) (1,3,L) (1,4,L) (1,5,L)   (1,6,R) (1,7,R) (1,8,R) (1,9,R) (1,10,R) (1,11,R)
-(2,1,L) (2,2,L) (2,3,L) (2,4,L) (2,5,L)   (2,6,R) (2,7,R) (2,8,R) (2,9,R) (2,10,R)
+(2,0,L) (2,1,L) (2,2,L) (2,3,L) (2,4,L) (2,5,L)   (2,6,R) (2,7,R) (2,8,R) (2,9,R) (2,10,R) (2,11,R)
                 (3,3,L) (3,4,L) (3,5,L)   (3,6,R) (3,7,R) (3,8,R)
 """
 
@@ -202,14 +199,15 @@ matrix_map = """
 # the feel is tuned by the HRM profile at the bottom of this file.
 # Thumb row (hold): Escape=MEDIA  Space=NAV  Tab=MOUSE | Enter=SYM  Backspace=NUM  Delete=FUN
 # Outer pinky columns: row 0 (beside Q/P) = HYPER (Cmd+Ctrl+Alt+Shift), row 1
-# (beside A/') = MEH (Cmd+Ctrl+Alt). Hold-only (tap does nothing), TLI profile
-# so the mods engage the instant a companion key goes down.
+# (beside A/') = MEH (Cmd+Ctrl+Alt), row 2 (beside Z//) = Ctrl+Alt. All
+# hold-only (tap does nothing), TLI profile so the mods engage the instant a
+# companion key goes down.
 [[layer]]
 name = "BASE"
 keys = """
-MT(No, LGui | LCtrl | LAlt | LShift, TLI) Q                W                E                R                T                    Y                U                I                O                P                MT(No, LGui | LCtrl | LAlt | LShift, TLI)
-MT(No, LGui | LCtrl | LAlt, TLI) MT(A, LGui, HRM) MT(S, LAlt, HRM) MT(D, LCtrl, HRM) MT(F, LShift, HRM) G                 H                MT(J, RShift, HRM) MT(K, RCtrl, HRM) MT(L, RAlt, HRM) MT(Quote, RGui, HRM) MT(No, LGui | LCtrl | LAlt, TLI)
-Z                X                C                V                B                    N                M                Comma            Dot              Slash
+Kc1 Q                W                E                R                T                    Y                U                I                O                P                Kc7
+Kc2 MT(A, LGui, HRM) MT(S, LAlt, HRM) MT(D, LCtrl, HRM) MT(F, LShift, HRM) G                 H                MT(J, RShift, HRM) MT(K, RCtrl, HRM) MT(L, RAlt, HRM) MT(Quote, RGui, HRM) Kc8
+Kc3 Z                X                C                V                B                    N                M                Comma            Dot              Slash            Kc9
                                   LT(3, Escape, TL) LT(1, Space, TL) LT(6, Tab, TL)      LT(4, Enter, TLI) LT(2, Backspace, TLI) LT(5, Delete, TL)
 """
 
@@ -223,7 +221,7 @@ name = "NAV"
 keys = """
 _______ No   No   No   No   No                        No        End       Home      No        CapsLock _______
 _______ LGui LAlt LCtrl LShift No                     Left      Down      Up        Right     CapsWordToggle _______
-No   No   No   No   No                        No        PageDown  PageUp    No        Insert
+No   No   No   No   No   No                        No        PageDown  PageUp    No        Insert   No
                No   No   No                   Enter     Backspace Delete
 """
 
@@ -236,7 +234,7 @@ name = "NUM"
 keys = """
 _______ LeftBracket Kc7 Kc8 Kc9 RightBracket          No No No No No _______
 _______ Semicolon   Kc4 Kc5 Kc6 Equal                 No RShift RCtrl RAlt RGui _______
-Grave       Kc1 Kc2 Kc3 Backslash             No No No No No
+No       Grave       Kc1 Kc2 Kc3 Backslash             No No No No No No
                 Dot Kc0 Minus                 No No No
 """
 
@@ -252,7 +250,7 @@ name = "MEDIA"
 keys = """
 _______ No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 User9 _______
 _______ LGui LAlt LCtrl LShift No                      TG(7)        AudioVolDown   AudioVolUp   User0          User1 _______
-No   No   No   No   No                         User7        MediaNextTrack MediaPrevTrack User2         User3
+No   No   No   No   No   No                         User7        MediaNextTrack MediaPrevTrack User2         User3 No
                No   No   No                    MediaStop    MediaPlayPause AudioMute
 """
 
@@ -264,7 +262,7 @@ name = "SYM"
 keys = """
 _______ SHIFTED(LeftBracket) SHIFTED(Kc7) SHIFTED(Kc8) SHIFTED(Kc9) SHIFTED(RightBracket)   No No No No No _______
 _______ SHIFTED(Semicolon)   SHIFTED(Kc4) SHIFTED(Kc5) SHIFTED(Kc6) SHIFTED(Equal)          No RShift RCtrl RAlt RGui _______
-SHIFTED(Grave)       SHIFTED(Kc1) SHIFTED(Kc2) SHIFTED(Kc3) SHIFTED(Backslash)      No No No No No
+No       SHIFTED(Grave)       SHIFTED(Kc1) SHIFTED(Kc2) SHIFTED(Kc3) SHIFTED(Backslash)      No No No No No No
                      SHIFTED(Kc9) SHIFTED(Kc0) SHIFTED(Minus)                       No No No
 """
 
@@ -277,7 +275,7 @@ name = "FUN"
 keys = """
 _______ F12 F7 F8 F9 WM(Kc4, LShift | LGui)             No No No No No _______
 _______ F11 F4 F5 F6 No                                 No RShift RCtrl RAlt RGui _______
-F10 F1 F2 F3 No                                 No No No No No
+No       F10 F1 F2 F3 No                                 No No No No No No
            Menu Space Tab                       No No No
 """
 
@@ -291,7 +289,7 @@ name = "MOUSE"
 keys = """
 _______ No   No   No   No   No                          No             No             No             No             No _______
 _______ LGui LAlt LCtrl LShift No                        MouseLeft      MouseDown      MouseUp        MouseRight     No _______
-No   No   No   No   No                           MouseWheelLeft MouseWheelDown MouseWheelUp   MouseWheelRight No
+No   No   No   No   No   No                           MouseWheelLeft MouseWheelDown MouseWheelUp   MouseWheelRight No No
                MouseBtn4 MouseBtn5 No             MouseBtn1      MouseBtn3      MouseBtn2
 """
 
@@ -304,7 +302,7 @@ name = "DISPOFF"
 keys = """
 _______ _______ _______ _______ _______ _______        _______ _______ _______ _______ _______ _______
 _______ _______ _______ _______ _______ _______        _______ _______ _______ _______ _______ _______
-_______ _______ _______ _______ _______        _______ _______ _______ _______ _______
+_______ _______ _______ _______ _______ _______        _______ _______ _______ _______ _______ _______
                 _______ _______ _______         _______ _______ _______
 """
 

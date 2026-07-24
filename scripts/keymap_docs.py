@@ -232,9 +232,9 @@ def load_layers(toml_path: str) -> list[dict]:
     for layer in raw_layers:
         name = layer["name"]
         tokens = tokenize_keys(layer["keys"])
-        if len(tokens) != 40:
+        if len(tokens) != 42:
             print(
-                f"Error: layer '{name}' has {len(tokens)} tokens (expected 40)",
+                f"Error: layer '{name}' has {len(tokens)} tokens (expected 42)",
                 file=sys.stderr,
             )
             ok = False
@@ -265,10 +265,10 @@ def _yaml_key(tap: str, hold: str | None) -> str:
 
 
 def build_keymap_yaml(layers: list[dict]) -> str:
-    """Build a keymap-drawer YAML string for a 40-key split Corne.
+    """Build a keymap-drawer YAML string for a 42-key split Corne.
 
-    The physical grid is 3x6 split + 3 thumbs per side (42 slots); the two
-    unmapped bottom-row outer positions are emitted as null (blank keys).
+    The physical grid is 3x6 split + 3 thumbs per side (42 slots); all
+    positions are mapped, so tokens fill the grid one-to-one.
     """
     lines: list[str] = []
 
@@ -288,11 +288,8 @@ def build_keymap_yaml(layers: list[dict]) -> str:
         name = layer["name"]
         keys = layer["keys"]
         lines.append(f"  {name}:")
-        # rows 0-1 span all 12 columns; row 2 lacks the outer pinky pair,
-        # so pad with null at (2,0) and (2,11) to fill the 42-slot grid.
-        slots: list = list(keys[0:24])
-        slots += [None] + list(keys[24:34]) + [None]
-        slots += list(keys[34:40])
+        # All three main rows span the full 12 columns; thumbs follow.
+        slots: list = list(keys)
         for slot in slots:
             if slot is None:
                 lines.append("    - null")
@@ -344,20 +341,19 @@ def cmd_svg(toml_path: str, out_path: str) -> None:
 # HTML subcommand — self-contained browser viewer
 # ─────────────────────────────────────────────────────────────────────────────
 
-# 40-key indices per region (row-major order from token list):
+# 42-key indices per region (row-major order from token list):
 # keys 0-11  = row 0 (left 0-5, right 6-11) — outer pair = Hyper
 # keys 12-23 = row 1 (left 12-17, right 18-23) — outer pair = Meh
-# keys 24-33 = row 2 (left 24-28, right 29-33) — no outer columns
-# keys 34-39 = thumb row (left 34-36, right 37-39)
-# None = blank placeholder cell keeping row 2 column-aligned under rows 0/1.
+# keys 24-35 = row 2 (left 24-29, right 30-35) — outer pair = Ctrl+Alt
+# keys 36-41 = thumb row (left 36-38, right 39-41)
 
 _MAIN_ROWS = [
     ([0, 1, 2, 3, 4, 5],        [6, 7, 8, 9, 10, 11]),
     ([12, 13, 14, 15, 16, 17],  [18, 19, 20, 21, 22, 23]),
-    ([None, 24, 25, 26, 27, 28], [29, 30, 31, 32, 33, None]),
+    ([24, 25, 26, 27, 28, 29],  [30, 31, 32, 33, 34, 35]),
 ]
-_THUMB_LEFT  = range(34, 37)
-_THUMB_RIGHT = range(37, 40)
+_THUMB_LEFT  = range(36, 39)
+_THUMB_RIGHT = range(39, 42)
 
 
 def _esc(s: str) -> str:
@@ -803,7 +799,7 @@ def build_html(layers: list[dict]) -> str:
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1>yuyudhan-1</h1>
-        <p class="subtitle">Corne 40-key keymap</p>
+        <p class="subtitle">Corne 42-key keymap</p>
       </div>
       <nav class="layer-nav" role="listbox" aria-label="Keymap layers">
         {nav_items}
