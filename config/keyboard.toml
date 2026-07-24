@@ -205,9 +205,9 @@ matrix_map = """
 [[layer]]
 name = "BASE"
 keys = """
-Kc1 Q                W                E                R                T                    Y                U                I                O                P                Kc7
-Kc2 MT(A, LGui, HRM) MT(S, LAlt, HRM) MT(D, LCtrl, HRM) MT(F, LShift, HRM) G                 H                MT(J, RShift, HRM) MT(K, RCtrl, HRM) MT(L, RAlt, HRM) MT(Quote, RGui, HRM) Kc8
-Kc3 Z                X                C                V                B                    N                M                Comma            Dot              Slash            Kc9
+MT(No, LGui | LCtrl | LAlt | LShift, TLI) Q                W                E                R                T                    Y                U                I                O                P                MT(No, LGui | LCtrl | LAlt | LShift, TLI)
+MT(No, LGui | LCtrl | LAlt, TLI) MT(A, LGui, HRM) MT(S, LAlt, HRM) MT(D, LCtrl, HRM) MT(F, LShift, HRM) G                 H                MT(J, RShift, HRM) MT(K, RCtrl, HRM) MT(L, RAlt, HRM) MT(Quote, RGui, HRM) MT(No, LGui | LCtrl | LAlt, TLI)
+MT(No, LCtrl | LAlt, TLI) Z                X                C                V                B                    N                M                Comma            Dot              Slash            MT(No, LCtrl | LAlt, TLI)
                                   LT(3, Escape, TL) LT(1, Space, TL) LT(6, Tab, TL)      LT(4, Enter, TLI) LT(2, Backspace, TLI) LT(5, Delete, TL)
 """
 
