@@ -6,14 +6,15 @@
 //!
 //!   rows   2-25   OM glyph (Devanagari ॐ, 30×24 px, page-format bitmap)
 //!              + bindu halo pulse (circle on tick%8, 3.2 s cycle)
-//!   rows  30-73   Trishul (28×48 px, page-format bitmap)
+//!   rows  26-73   Trishul (28×48 px, page-format bitmap)
 //!              + shaft energy pulses on right-hand keypress
-//!   rows  80-100  4 equalizer bars (x=2/8/14/20, width 5, WPM-reactive) — left area x 0–24
+//!   rows  76-96   4 equalizer bars (x=2/8/14/20, width 5, WPM-reactive) — left area x 0–24
 //!              + ✓ check icon (x=25–31, always on when linked)
 //!              / ✗ cross icon (x=25–31, blinking tick%2 when not linked)
-//!              / CAPS inverted badge (overlay x=2–23, y=80–87 when Caps Lock on)
-//!   rows 104-112  Battery gauge outline + fill (blinks at <20%)
-//!   rows 113-127  Battery number in FONT_9X15 (centred; no "%" — gauge provides context)
+//!              / CAPS inverted badge (overlay x=2–23, y=76–83 when Caps Lock on)
+//!   rows  96-104  Battery gauge outline + fill (blinks at <20%)
+//!   rows 105-119  Battery number in FONT_9X15 (centred; no "%" — gauge provides context)
+//!   rows 120-127  Firmware version "{ver}" FONT_5X8 (centred; from VERSION file)
 //!
 //! Animation: `render_interval = 400` in keyboard.toml drives idle ticks (2.5 fps);
 //! event renders while typing make bars/pulses react ~30 fps.  Zero cost while sleeping.
@@ -35,6 +36,11 @@ use rmk::heapless::String;
 use rmk::types::battery::BatteryStatus;
 use crate::layer_names::DISPLAY_OFF_LAYER;
 use crate::bitmaps::{OM, draw_page_format_frame, on_external_power};
+
+/// Firmware version, embedded at build time from the repo-root `VERSION` file
+/// (see build.rs). Shown on the peripheral OLED as `{FW_VERSION}` so both
+/// halves report the same flashed build.
+const FW_VERSION: &str = env!("YUYUDHAN_FW_VERSION");
 
 /// Trishul pointing up — three barbed prongs, outer prongs arc down into shaft,
 /// crossbar, damaru diamond mid-shaft, round pommel.
@@ -88,6 +94,7 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
 
         let fill_on  = PrimitiveStyle::with_fill(BinaryColor::On);
         let small_inv= MonoTextStyle::new(&FONT_5X8,  BinaryColor::Off);
+        let tiny     = MonoTextStyle::new(&FONT_5X8,  BinaryColor::On);
         let big      = MonoTextStyle::new(&FONT_9X15, BinaryColor::On);
 
         // ── 1. Om glyph (rows 2–25) ───────────────────────────────────────────
@@ -103,9 +110,9 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
                 .ok();
         }
 
-        // ── 3. Trishul (rows 30–77) ───────────────────────────────────────────
+        // ── 3. Trishul (rows 26–73) ───────────────────────────────────────────
         // Offset x=2 centres the 28-wide bitmap in 32 px. Shaft at screen x 15–16.
-        draw_page_format_frame(display, &TRISHUL, 28, 2, 30);
+        draw_page_format_frame(display, &TRISHUL, 28, 2, 26);
 
         // ── 4. Shaft energy pulses (keypress-driven) ──────────────────────────
         // Spawn a pulse on each fresh right-hand keypress.
@@ -118,10 +125,10 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
             }
         }
         // Draw and advance each active pulse — a 6-px wide bulge over the 2-px shaft,
-        // starting at y=70 (pommel top) and rising to y=52 (prong base) over 6 steps.
+        // starting at y=66 (pommel top) and rising to y=48 (prong base) over 6 steps.
         for slot in self.pulses.iter_mut() {
             if *slot > 0 {
-                let y = 70 - (*slot as i32) * 3;
+                let y = 66 - (*slot as i32) * 3;
                 Rectangle::new(Point::new(13, y), Size::new(6, 3))
                     .into_styled(fill_on)
                     .draw(display)
@@ -133,32 +140,32 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
             }
         }
 
-        // ── 5/6/7. Bars + connection icon / CAPS (rows 80–100) ────────────────
+        // ── 5/6/7. Bars + connection icon / CAPS (rows 76–96) ─────────────────
         //
         // Right strip x=25–31 always shows the link-state icon:
         //   ✓ (check, stroke-1) when central_connected
         //   ✗ (cross, stroke-2, blinking) when not connected
         //
         // Left area x=0–24 shows 4 equalizer bars when connected, blank when not.
-        // CAPS badge overlays the bar area (x=2–23, y=80–87) when Caps Lock is on.
+        // CAPS badge overlays the bar area (x=2–23, y=76–83) when Caps Lock is on.
 
         let stroke1 = PrimitiveStyle::with_stroke(BinaryColor::On, 1);
         let stroke2 = PrimitiveStyle::with_stroke(BinaryColor::On, 2);
 
         if ctx.central_connected {
-            // ✓ check icon — always on, x=25–31, y=84–93.
+            // ✓ check icon — always on, x=25–31, y=81–89.
             // Short left arm going down-right; long right arm going up-right.
-            Line::new(Point::new(25, 90), Point::new(27, 93)).into_styled(stroke1).draw(display).ok();
-            Line::new(Point::new(27, 93), Point::new(31, 85)).into_styled(stroke1).draw(display).ok();
+            Line::new(Point::new(25, 86), Point::new(27, 89)).into_styled(stroke1).draw(display).ok();
+            Line::new(Point::new(27, 89), Point::new(31, 81)).into_styled(stroke1).draw(display).ok();
 
-            // 4 equalizer bars — x=2,8,14,20 (width 5), baseline y=100, height 2–18 px.
+            // 4 equalizer bars — x=2,8,14,20 (width 5), baseline y=96, height 2–18 px.
             for i in 0usize..4 {
                 let h = (2
                     + WAVE[(self.tick.wrapping_add(PHASE[i]) % 8) as usize]
                     + (ctx.wpm as u32 / 30).min(8))
                 .min(18);
                 Rectangle::new(
-                    Point::new(2 + i as i32 * 6, 100 - h as i32),
+                    Point::new(2 + i as i32 * 6, 96 - h as i32),
                     Size::new(5, h),
                 )
                 .into_styled(fill_on)
@@ -168,29 +175,29 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
 
             // CAPS badge — inverted 22×8 box overlaid on the bar area.
             if ctx.caps_lock {
-                Rectangle::new(Point::new(2, 80), Size::new(22, 8))
+                Rectangle::new(Point::new(2, 76), Size::new(22, 8))
                     .into_styled(fill_on)
                     .draw(display)
                     .ok();
-                Text::with_baseline("CAPS", Point::new(3, 80), small_inv, Baseline::Top)
+                Text::with_baseline("CAPS", Point::new(3, 76), small_inv, Baseline::Top)
                     .draw(display)
                     .ok();
             }
         } else {
             // ✗ cross icon (blinking) — x=25–31, y=84–93.
             if self.tick % 2 == 0 {
-                Line::new(Point::new(25, 84), Point::new(31, 93)).into_styled(stroke2).draw(display).ok();
-                Line::new(Point::new(31, 84), Point::new(25, 93)).into_styled(stroke2).draw(display).ok();
+                Line::new(Point::new(25, 80), Point::new(31, 89)).into_styled(stroke2).draw(display).ok();
+                Line::new(Point::new(31, 80), Point::new(25, 89)).into_styled(stroke2).draw(display).ok();
             }
         }
 
-        // ── 8. Battery gauge (rows 104–112) ──────────────────────────────────
+        // ── 8. Battery gauge (rows 96–104) ───────────────────────────────────
         // Outline + nub are always visible.
-        Rectangle::new(Point::new(2, 104), Size::new(28, 9))
+        Rectangle::new(Point::new(2, 96), Size::new(28, 9))
             .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
             .draw(display)
             .ok();
-        Rectangle::new(Point::new(30, 107), Size::new(2, 3))
+        Rectangle::new(Point::new(30, 99), Size::new(2, 3))
             .into_styled(fill_on)
             .draw(display)
             .ok();
@@ -199,11 +206,11 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
         let mut bat_num: String<4> = String::new();
         if charging {
             let sweep = (((self.tick as u32) % 9) * 24 / 8).clamp(1, 24);
-            Rectangle::new(Point::new(4, 106), Size::new(sweep, 5))
+            Rectangle::new(Point::new(4, 98), Size::new(sweep, 5))
                 .into_styled(fill_on)
                 .draw(display)
                 .ok();
-            crate::bitmaps::draw_charging_bolt(display, 12, 113);
+            crate::bitmaps::draw_charging_bolt(display, 12, 105);
         } else {
             match *ctx.battery {
                 BatteryStatus::Available { level: Some(pct), .. } => {
@@ -211,7 +218,7 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
                     let draw_fill = pct >= 20 || self.tick % 2 == 0;
                     if draw_fill {
                         let fill_w = (pct as u32 * 24 / 100).max(1);
-                        Rectangle::new(Point::new(4, 106), Size::new(fill_w, 5))
+                        Rectangle::new(Point::new(4, 98), Size::new(fill_w, 5))
                             .into_styled(fill_on)
                             .draw(display)
                             .ok();
@@ -227,16 +234,26 @@ impl DisplayRenderer<BinaryColor> for TrishulRenderer {
                 }
             }
 
-            // ── 9. Battery number (rows 113–127) ─────────────────────────────────
+            // ── 9. Battery number (rows 105–119) ─────────────────────────────
             // Centred in 32 px; FONT_9X15 advance = 9 px/char.
             // "%" omitted — "100" (27 px) fits; "100%" (36 px) would overflow.
             if !bat_num.is_empty() {
                 let x = (32 - bat_num.len() as i32 * 9) / 2;
-                Text::with_baseline(&bat_num, Point::new(x.max(0), 113), big, Baseline::Top)
+                Text::with_baseline(&bat_num, Point::new(x.max(0), 105), big, Baseline::Top)
                     .draw(display)
                     .ok();
             }
         }
+
+        // ── 10. Firmware version (rows 120–127) ──────────────────────────────
+        // FONT_5X8 only — no larger-font fallback like the left half; the right
+        // half has zero spare rows so this must stay 8 px tall.
+        let mut ver_buf: String<12> = String::new();
+        let _ = write!(ver_buf, "{}", FW_VERSION);
+        let ver_x = ((32 - ver_buf.len() as i32 * 5) / 2).max(0);
+        Text::with_baseline(&ver_buf, Point::new(ver_x, 120), tiny, Baseline::Top)
+            .draw(display)
+            .ok();
     }
 }
 

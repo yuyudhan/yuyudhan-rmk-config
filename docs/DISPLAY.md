@@ -141,19 +141,17 @@ y:    0                    32
       ┌──────────────────────┐  ← far from user
    2  │  OM glyph (30×24)    │
   25  ├──────────────────────┤
-  26  │  (gap)               │
-  30  ├──────────────────────┤
-      │  Trishul (28×48)     │
-  77  ├──────────────────────┤
-  78  │  (gap)               │
-  80  ├──────────────────────┤
-      │  Equalizer bars (5)  │
+  26  │  Trishul (28×48)     │
+  73  ├──────────────────────┤
+  76  │  Equalizer bars (5)  │
       │  or CAPS badge       │
- 100  │  or NO-LINK blink    │
- 104  ├──────────────────────┤
+  96  │  or NO-LINK blink    │
+  96  ├──────────────────────┤
       │  Battery gauge       │
- 112  ├──────────────────────┤
+ 104  ├──────────────────────┤
       │  Battery number      │
+ 119  ├──────────────────────┤
+      │  Firmware version    │
  127  └──────────────────────┘  ← nearest to user
 ```
 
@@ -163,14 +161,15 @@ y:    0                    32
 |--------|--------|-------------|---------------------|
 | Om glyph | `OM` bitmap | page-format | x=1, y=2 (30×24 px, 3 pages) |
 | Bindu halo | `tick%8 < 4` | `Circle` stroke-1 | centre (18,3), r=7 |
-| Trishul | `TRISHUL` bitmap | page-format | x=2, y=30 (28×48 px, 6 pages) |
-| Shaft pulse | `key_press_latch` + `central_connected` | filled rect 6×3 | x=13, y=70–52 rising, 6 steps |
-| Equalizer bars | `tick`, `wpm`, `central_connected` | 4 filled rects width-5 | x 2/8/14/20, baseline y=100, when connected |
-| ✓ link icon | `central_connected` | `Line` stroke-1 | x=25–31, y=85–93 (always on when linked) |
-| ✗ link icon | `!central_connected`, `tick%2==0` | `Line` stroke-2 | x=25–31, y=84–93 (blinking when not linked) |
-| CAPS badge | `caps_lock && central_connected` | `FONT_5X8` inverted | box (2,80) 22×8 |
-| Battery gauge | `*ctx.battery` | stroke-1 rect + fill | outline (2,104) 28×9; nub (30,107) 2×3 |
-| Battery number | `*ctx.battery` | `FONT_9X15` | centred x=(32-w)/2, y=113 |
+| Trishul | `TRISHUL` bitmap | page-format | x=2, y=26 (28×48 px, 6 pages) |
+| Shaft pulse | `key_press_latch` + `central_connected` | filled rect 6×3 | x=13, y=66–48 rising, 6 steps |
+| Equalizer bars | `tick`, `wpm`, `central_connected` | 4 filled rects width-5 | x 2/8/14/20, baseline y=96, when connected |
+| ✓ link icon | `central_connected` | `Line` stroke-1 | x=25–31, y=81–89 (always on when linked) |
+| ✗ link icon | `!central_connected`, `tick%2==0` | `Line` stroke-2 | x=25–31, y=80–89 (blinking when not linked) |
+| CAPS badge | `caps_lock && central_connected` | `FONT_5X8` inverted | box (2,76) 22×8 |
+| Battery gauge | `*ctx.battery` | stroke-1 rect + fill | outline (2,96) 28×9; nub (30,99) 2×3 |
+| Battery number | `*ctx.battery` | `FONT_9X15` | centred x=(32-w)/2, y=105 |
+| Firmware version | `FW_VERSION` (VERSION file) | `FONT_5X8` | centred x=(32-5·len)/2, y=120 |
 
 ### Bitmaps
 
