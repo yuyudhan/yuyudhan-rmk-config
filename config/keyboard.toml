@@ -313,27 +313,26 @@ _______ _______ _______ _______ _______ _______        _______ _______ _______ _
 # (modifier/layer)?" Four knobs decide it; here's each one in real typing
 # terms:
 #
-# hold_timeout = 100ms
+# hold_timeout = 200ms (HRM/global), 100ms (TL/TLI thumbs)
 #   The press-and-wait threshold. Press a dual key ALONE and keep it down
-#   past 100ms -> hold (mod/layer). Release sooner -> tap (letter).
+#   past the timeout -> hold (mod/layer). Release sooner -> tap (letter).
 #   Lower = mods fire faster but fast typing misfires more; higher = safer
 #   typing but you must consciously wait longer for a chord.
 #
-# enable_flow_tap + prior_idle_time = 80ms   ("am I mid-word?")
-#   If ANY other key was pressed less than 80ms before a dual key goes
+# enable_flow_tap + prior_idle_time = 150ms   ("am I mid-word?")
+#   If ANY other key was pressed less than 150ms before a dual key goes
 #   down, the firmware decides TAP instantly — no waiting, no misfire.
 #   This is the main defence against rolls like "ds" firing Ctrl mid-word,
 #   and cross-hand rolls like "an" firing Cmd+N.
-#   Consequence: to USE a home-row mod you must pause >=80ms first —
+#   Consequence: to USE a home-row mod you must pause >=150ms first —
 #   which you naturally do before a deliberate shortcut like Ctrl+C.
-#   Tuned for ~87 WPM (~138ms between keystrokes): lowered 120ms -> 100ms ->
-#   90ms because deliberate chords (Ctrl via D) kept resolving as letters,
-#   then raised to 150ms because 90ms sat below the ~138ms average
-#   inter-keystroke gap, then dropped back to 80ms by explicit choice.
-#   80ms sits below the average inter-keystroke gap, so fast rolls may
-#   escape flow-tap and misfire as mods again — if that happens, raise it.
+#   History: 120 -> 100 -> 90 (chords resolving as letters) -> 150 ->
+#   80 (mods felt slow, but typing misfired badly at 90 WPM) -> 150ms.
+#   150ms sits above the ~133ms average inter-keystroke gap at 90 WPM,
+#   so normal typing is always caught by flow-tap. Typing accuracy is
+#   prioritised over mod activation speed by explicit choice.
 #   NOTE: prior_idle_time is GLOBAL (this top-level table only); profiles
-#   can switch flow-tap on/off but all share this 80ms window.
+#   can switch flow-tap on/off but all share this 150ms window.
 #
 # permissive_hold (per-profile below)   ("nested press = intentional chord")
 #   While the dual key is down, if another key is pressed AND RELEASED
@@ -387,12 +386,12 @@ _______ _______ _______ _______ _______ _______        _______ _______ _______ _
 # ============================================================================
 [behavior.morse]
 enable_flow_tap = true
-prior_idle_time = "80ms"
-hold_timeout = "100ms"
+prior_idle_time = "150ms"
+hold_timeout = "200ms"
 gap_timeout = "200ms"
 
 [behavior.morse.profiles]
-HRM = { enable_flow_tap = true, permissive_hold = true, unilateral_tap = true, hold_timeout = "100ms", gap_timeout = "200ms" }
+HRM = { enable_flow_tap = true, permissive_hold = true, unilateral_tap = true, hold_timeout = "200ms", gap_timeout = "200ms" }
 TL = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "100ms", gap_timeout = "200ms" }
 TLI = { enable_flow_tap = false, hold_on_other_press = true, hold_timeout = "100ms", gap_timeout = "200ms" }
 
