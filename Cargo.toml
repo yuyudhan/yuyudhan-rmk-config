@@ -83,8 +83,3 @@ opt-level = "z"         # optimize for binary size
 overflow-checks = false
 lto = "fat"
 
-# DISABLED 2026-07-24: vendor patch off — using stock RMK from the pinned upstream rev.
-# Re-enable by uncommenting the two lines below. Trade-off: profile-stealing and
-# split-reconnect bugs return (see vendor/rmk/YUYUDHAN_PATCH.md).
-# [patch."https://github.com/HaoboGu/rmk"]
-# rmk = { path = "vendor/rmk/rmk" }
