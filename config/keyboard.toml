@@ -14,7 +14,7 @@ split_central_sleep_timeout_seconds = 300
 
 [storage]
 # clear_storage = true wipes ALL storage every boot — see docs before enabling.
-# clear_storage = true
+clear_storage = false
 
 [ble]
 enabled = true
@@ -123,9 +123,9 @@ _______ _______ _______ _______ _______ _______        _______ _______ _______ _
 prior_idle_time = "150ms"
 
 [behavior.morse.profiles]
-HRM = { enable_flow_tap = true, unilateral_tap = true, permissive_hold = true, hold_timeout = "250ms", gap_timeout = "200ms" }
-TL = { enable_flow_tap = false, permissive_hold = true, hold_timeout = "200ms", gap_timeout = "200ms" }
-TLI = { enable_flow_tap = false, hold_on_other_press = true, hold_timeout = "200ms", gap_timeout = "200ms" }
+HRM = { hold_timeout = "150ms", gap_timeout = "200ms" }
+TL = { hold_timeout = "150ms", gap_timeout = "200ms" }
+TLI = { hold_timeout = "150ms", gap_timeout = "200ms" }
 
 [split]
 connection = "ble"
