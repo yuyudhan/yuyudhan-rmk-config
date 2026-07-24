@@ -1,6 +1,6 @@
 # justfile — local RMK firmware builds for the yuyudhan-1 Corne (nice!nano, BLE split).
 #
-# Single profile, 36-key layout. The whole keymap lives in `config/keyboard.toml`.
+# Single profile, 40-key layout. The whole keymap lives in `config/keyboard.toml`.
 # Usage is `just <verb> <target>`:
 #   just build left      # LEFT half  (central)  -> rmk-central.uf2
 #   just build right     # RIGHT half (peripheral) -> rmk-peripheral.uf2

@@ -163,7 +163,7 @@ body { background: var(--bg); color: var(--tap-color); }
 .kb-split-gap { width: 30px; flex-shrink: 0; }
 
 .thumb-half { display: flex; gap: 5px; align-items: center; }
-.thumb-spacer { width: 121px; flex-shrink: 0; }
+.thumb-spacer { width: 184px; flex-shrink: 0; }
 
 .key {
   width: 58px;
@@ -183,6 +183,7 @@ body { background: var(--bg); color: var(--tap-color); }
 }
 .key:hover { background: var(--key-hover); }
 .key.empty { background: transparent; border-color: #2a2d3e; }
+.key-blank { background: transparent; border: none; pointer-events: none; }
 .key-activator {
   display: flex;
   flex-direction: column;
@@ -264,7 +265,7 @@ body { background: var(--bg); color: var(--tap-color); }
   .key { width: 48px; height: 44px; }
   .tap { font-size: 12px; }
   .hold { font-size: 8px; }
-  .thumb-spacer { width: 101px; }
+  .thumb-spacer { width: 153px; }
 }
 
   </style>
@@ -274,7 +275,7 @@ body { background: var(--bg); color: var(--tap-color); }
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1>yuyudhan-1</h1>
-        <p class="subtitle">Corne 36-key keymap</p>
+        <p class="subtitle">Corne 40-key keymap</p>
       </div>
       <nav class="layer-nav" role="listbox" aria-label="Keymap layers">
         <button class="nav-item active" data-index="0" role="option" aria-selected="true" title="Press 0"><span class="nav-index">0</span><span class="nav-name">BASE</span></button><button class="nav-item" data-index="1" role="option" aria-selected="false" title="Press 1"><span class="nav-index">1</span><span class="nav-name">NAV</span></button><button class="nav-item" data-index="2" role="option" aria-selected="false" title="Press 2"><span class="nav-index">2</span><span class="nav-name">NUM</span></button><button class="nav-item" data-index="3" role="option" aria-selected="false" title="Press 3"><span class="nav-index">3</span><span class="nav-name">MEDIA</span></button><button class="nav-item" data-index="4" role="option" aria-selected="false" title="Press 4"><span class="nav-index">4</span><span class="nav-name">SYM</span></button><button class="nav-item" data-index="5" role="option" aria-selected="false" title="Press 5"><span class="nav-index">5</span><span class="nav-name">FUN</span></button><button class="nav-item" data-index="6" role="option" aria-selected="false" title="Press 6"><span class="nav-index">6</span><span class="nav-name">MOUSE</span></button><button class="nav-item" data-index="7" role="option" aria-selected="false" title="Press 7"><span class="nav-index">7</span><span class="nav-name">DISPOFF</span></button>
@@ -290,6 +291,7 @@ body { background: var(--bg); color: var(--tap-color); }
   <div class="keyboard">
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap"></span><span class="hold">Hyper</span></div>
         <div class="key"><span class="tap">Q</span></div>
         <div class="key"><span class="tap">W</span></div>
         <div class="key"><span class="tap">E</span></div>
@@ -303,10 +305,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">I</span></div>
         <div class="key"><span class="tap">O</span></div>
         <div class="key"><span class="tap">P</span></div>
+        <div class="key"><span class="tap"></span><span class="hold">Hyper</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap"></span><span class="hold">Meh</span></div>
         <div class="key"><span class="tap">A</span><span class="hold">GUI</span></div>
         <div class="key"><span class="tap">S</span><span class="hold">Alt</span></div>
         <div class="key"><span class="tap">D</span><span class="hold">Ctrl</span></div>
@@ -320,10 +324,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">K</span><span class="hold">Ctrl</span></div>
         <div class="key"><span class="tap">L</span><span class="hold">Alt</span></div>
         <div class="key"><span class="tap">&#x27;</span><span class="hold">GUI</span></div>
+        <div class="key"><span class="tap"></span><span class="hold">Meh</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key key-blank"></div>
         <div class="key"><span class="tap">Z</span></div>
         <div class="key"><span class="tap">X</span></div>
         <div class="key"><span class="tap">C</span></div>
@@ -337,6 +343,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">,</span></div>
         <div class="key"><span class="tap">.</span></div>
         <div class="key"><span class="tap">/</span></div>
+        <div class="key key-blank"></div>
       </div>
     </div>
     <div class="kb-row kb-thumb-row">
@@ -361,6 +368,7 @@ body { background: var(--bg); color: var(--tap-color); }
   <div class="keyboard">
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
@@ -374,10 +382,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">Home</span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key"><span class="tap">Caps</span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">GUI</span></div>
         <div class="key"><span class="tap">Alt</span></div>
         <div class="key"><span class="tap">Ctrl</span></div>
@@ -391,10 +401,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">↑</span></div>
         <div class="key"><span class="tap">→</span></div>
         <div class="key"><span class="tap">CapsWd</span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key key-blank"></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
@@ -408,6 +420,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">PgUp</span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key"><span class="tap">Ins</span></div>
+        <div class="key key-blank"></div>
       </div>
     </div>
     <div class="kb-row kb-thumb-row">
@@ -432,6 +445,7 @@ body { background: var(--bg); color: var(--tap-color); }
   <div class="keyboard">
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">[</span></div>
         <div class="key"><span class="tap">7</span></div>
         <div class="key"><span class="tap">8</span></div>
@@ -445,10 +459,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">;</span></div>
         <div class="key"><span class="tap">4</span></div>
         <div class="key"><span class="tap">5</span></div>
@@ -462,10 +478,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">Ctrl</span></div>
         <div class="key"><span class="tap">Alt</span></div>
         <div class="key"><span class="tap">GUI</span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key key-blank"></div>
         <div class="key"><span class="tap">`</span></div>
         <div class="key"><span class="tap">1</span></div>
         <div class="key"><span class="tap">2</span></div>
@@ -479,6 +497,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
+        <div class="key key-blank"></div>
       </div>
     </div>
     <div class="kb-row kb-thumb-row">
@@ -503,6 +522,7 @@ body { background: var(--bg); color: var(--tap-color); }
   <div class="keyboard">
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
@@ -516,10 +536,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">Bri+</span></div>
         <div class="key"><span class="tap">ClrBT</span></div>
         <div class="key"><span class="tap">ClrAllBT</span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">GUI</span></div>
         <div class="key"><span class="tap">Alt</span></div>
         <div class="key"><span class="tap">Ctrl</span></div>
@@ -533,10 +555,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">Vol+</span></div>
         <div class="key"><span class="tap">BT0</span></div>
         <div class="key"><span class="tap">BT1</span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key key-blank"></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
@@ -550,6 +574,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">Prev</span></div>
         <div class="key"><span class="tap">BT2</span></div>
         <div class="key"><span class="tap">BT3</span></div>
+        <div class="key key-blank"></div>
       </div>
     </div>
     <div class="kb-row kb-thumb-row">
@@ -574,6 +599,7 @@ body { background: var(--bg); color: var(--tap-color); }
   <div class="keyboard">
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">{</span></div>
         <div class="key"><span class="tap">&amp;</span></div>
         <div class="key"><span class="tap">*</span></div>
@@ -587,10 +613,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">:</span></div>
         <div class="key"><span class="tap">$</span></div>
         <div class="key"><span class="tap">%</span></div>
@@ -604,10 +632,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">Ctrl</span></div>
         <div class="key"><span class="tap">Alt</span></div>
         <div class="key"><span class="tap">GUI</span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key key-blank"></div>
         <div class="key"><span class="tap">~</span></div>
         <div class="key"><span class="tap">!</span></div>
         <div class="key"><span class="tap">@</span></div>
@@ -621,6 +651,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
+        <div class="key key-blank"></div>
       </div>
     </div>
     <div class="kb-row kb-thumb-row">
@@ -645,6 +676,7 @@ body { background: var(--bg); color: var(--tap-color); }
   <div class="keyboard">
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">F12</span></div>
         <div class="key"><span class="tap">F7</span></div>
         <div class="key"><span class="tap">F8</span></div>
@@ -658,10 +690,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">F11</span></div>
         <div class="key"><span class="tap">F4</span></div>
         <div class="key"><span class="tap">F5</span></div>
@@ -675,10 +709,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">Ctrl</span></div>
         <div class="key"><span class="tap">Alt</span></div>
         <div class="key"><span class="tap">GUI</span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key key-blank"></div>
         <div class="key"><span class="tap">F10</span></div>
         <div class="key"><span class="tap">F1</span></div>
         <div class="key"><span class="tap">F2</span></div>
@@ -692,6 +728,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
+        <div class="key key-blank"></div>
       </div>
     </div>
     <div class="kb-row kb-thumb-row">
@@ -716,6 +753,7 @@ body { background: var(--bg); color: var(--tap-color); }
   <div class="keyboard">
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
@@ -729,10 +767,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">GUI</span></div>
         <div class="key"><span class="tap">Alt</span></div>
         <div class="key"><span class="tap">Ctrl</span></div>
@@ -746,10 +786,12 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">M↑</span></div>
         <div class="key"><span class="tap">M→</span></div>
         <div class="key empty"><span class="tap"></span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key key-blank"></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
         <div class="key empty"><span class="tap"></span></div>
@@ -763,6 +805,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">W↑</span></div>
         <div class="key"><span class="tap">W→</span></div>
         <div class="key empty"><span class="tap"></span></div>
+        <div class="key key-blank"></div>
       </div>
     </div>
     <div class="kb-row kb-thumb-row">
@@ -792,9 +835,11 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
       <div class="kb-split-gap"></div>
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
@@ -809,9 +854,11 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
+        <div class="key"><span class="tap">_______</span></div>
       </div>
       <div class="kb-split-gap"></div>
       <div class="kb-half">
+        <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
@@ -821,6 +868,7 @@ body { background: var(--bg); color: var(--tap-color); }
     </div>
     <div class="kb-row">
       <div class="kb-half">
+        <div class="key key-blank"></div>
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
@@ -834,6 +882,7 @@ body { background: var(--bg); color: var(--tap-color); }
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
         <div class="key"><span class="tap">_______</span></div>
+        <div class="key key-blank"></div>
       </div>
     </div>
     <div class="kb-row kb-thumb-row">

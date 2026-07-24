@@ -107,14 +107,14 @@ unlock_keys = [[3, 3], [3, 4]]
 # columns 3-8. So `rows = 4` / `cols = 12` below describe the WIRING and
 # must never be changed to 3; with rows = 3 the thumbs would never scan.
 #
-# matrix_map is the filter from 48 wired positions down to the 36 keys THIS
-# LAYOUT USES: note its shape below — three rows of 10, then one row of 6
-# thumbs. Columns 0 and 11 (the outer pinky columns) are physically present
-# on a 42-key Corne but INTENTIONALLY UNMAPPED here — pressing them does
-# nothing. Thumb columns 0-2 / 9-11 have no switches at all. This mirrors
-# ZMK's 36-key transform. To bring the outer columns to life: add (0,0,L),
-# (1,0,L), (2,0,L), (0,11,R), (1,11,R), (2,11,R) to matrix_map and one token
-# per new key in every [[layer]].keys block.
+# matrix_map is the filter from 48 wired positions down to the 40 keys THIS
+# LAYOUT USES: note its shape below — two rows of 12 (outer pinky columns 0
+# and 11 mapped on the top two rows: Hyper on row 0, Meh on row 1), one row
+# of 10, then one row of 6 thumbs. The bottom-row outer positions (2,0)/(2,11)
+# remain INTENTIONALLY UNMAPPED — pressing them does nothing. Thumb columns
+# 0-2 / 9-11 have no switches at all. To map the remaining pair: add (2,0,L)
+# and (2,11,R) to matrix_map and one token per new key in every
+# [[layer]].keys block.
 #
 # matrix_map also fixes the READING ORDER: the Nth token in every
 # [[layer]].keys block below binds to the Nth (row,col) entry here.
@@ -132,8 +132,8 @@ rows = 4
 cols = 12
 layers = 8
 matrix_map = """
-(0,1,L) (0,2,L) (0,3,L) (0,4,L) (0,5,L)   (0,6,R) (0,7,R) (0,8,R) (0,9,R) (0,10,R)
-(1,1,L) (1,2,L) (1,3,L) (1,4,L) (1,5,L)   (1,6,R) (1,7,R) (1,8,R) (1,9,R) (1,10,R)
+(0,0,L) (0,1,L) (0,2,L) (0,3,L) (0,4,L) (0,5,L)   (0,6,R) (0,7,R) (0,8,R) (0,9,R) (0,10,R) (0,11,R)
+(1,0,L) (1,1,L) (1,2,L) (1,3,L) (1,4,L) (1,5,L)   (1,6,R) (1,7,R) (1,8,R) (1,9,R) (1,10,R) (1,11,R)
 (2,1,L) (2,2,L) (2,3,L) (2,4,L) (2,5,L)   (2,6,R) (2,7,R) (2,8,R) (2,9,R) (2,10,R)
                 (3,3,L) (3,4,L) (3,5,L)   (3,6,R) (3,7,R) (3,8,R)
 """
@@ -201,11 +201,14 @@ matrix_map = """
 # GUI/Alt/Ctrl/Shift (A/S/D/F), mirrored on J/K/L/'. Tap = letter, hold = mod;
 # the feel is tuned by the HRM profile at the bottom of this file.
 # Thumb row (hold): Escape=MEDIA  Space=NAV  Tab=MOUSE | Enter=SYM  Backspace=NUM  Delete=FUN
+# Outer pinky columns: row 0 (beside Q/P) = HYPER (Cmd+Ctrl+Alt+Shift), row 1
+# (beside A/') = MEH (Cmd+Ctrl+Alt). Hold-only (tap does nothing), TLI profile
+# so the mods engage the instant a companion key goes down.
 [[layer]]
 name = "BASE"
 keys = """
-Q                W                E                R                T                    Y                U                I                O                P
-MT(A, LGui, HRM) MT(S, LAlt, HRM) MT(D, LCtrl, HRM) MT(F, LShift, HRM) G                 H                MT(J, RShift, HRM) MT(K, RCtrl, HRM) MT(L, RAlt, HRM) MT(Quote, RGui, HRM)
+MT(No, LGui | LCtrl | LAlt | LShift, TLI) Q                W                E                R                T                    Y                U                I                O                P                MT(No, LGui | LCtrl | LAlt | LShift, TLI)
+MT(No, LGui | LCtrl | LAlt, TLI) MT(A, LGui, HRM) MT(S, LAlt, HRM) MT(D, LCtrl, HRM) MT(F, LShift, HRM) G                 H                MT(J, RShift, HRM) MT(K, RCtrl, HRM) MT(L, RAlt, HRM) MT(Quote, RGui, HRM) MT(No, LGui | LCtrl | LAlt, TLI)
 Z                X                C                V                B                    N                M                Comma            Dot              Slash
                                   LT(3, Escape, TL) LT(1, Space, TL) LT(6, Tab, TL)      LT(4, Enter, TLI) LT(2, Backspace, TLI) LT(5, Delete, TL)
 """
@@ -218,8 +221,8 @@ Z                X                C                V                B           
 [[layer]]
 name = "NAV"
 keys = """
-No   No   No   No   No                        No        End       Home      No        CapsLock
-LGui LAlt LCtrl LShift No                     Left      Down      Up        Right     CapsWordToggle
+_______ No   No   No   No   No                        No        End       Home      No        CapsLock _______
+_______ LGui LAlt LCtrl LShift No                     Left      Down      Up        Right     CapsWordToggle _______
 No   No   No   No   No                        No        PageDown  PageUp    No        Insert
                No   No   No                   Enter     Backspace Delete
 """
@@ -231,8 +234,8 @@ No   No   No   No   No                        No        PageDown  PageUp    No  
 [[layer]]
 name = "NUM"
 keys = """
-LeftBracket Kc7 Kc8 Kc9 RightBracket          No No No No No
-Semicolon   Kc4 Kc5 Kc6 Equal                 No RShift RCtrl RAlt RGui
+_______ LeftBracket Kc7 Kc8 Kc9 RightBracket          No No No No No _______
+_______ Semicolon   Kc4 Kc5 Kc6 Equal                 No RShift RCtrl RAlt RGui _______
 Grave       Kc1 Kc2 Kc3 Backslash             No No No No No
                 Dot Kc0 Minus                 No No No
 """
@@ -247,8 +250,8 @@ Grave       Kc1 Kc2 Kc3 Backslash             No No No No No
 [[layer]]
 name = "MEDIA"
 keys = """
-No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 User9
-LGui LAlt LCtrl LShift No                      TG(7)        AudioVolDown   AudioVolUp   User0          User1
+_______ No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 User9 _______
+_______ LGui LAlt LCtrl LShift No                      TG(7)        AudioVolDown   AudioVolUp   User0          User1 _______
 No   No   No   No   No                         User7        MediaNextTrack MediaPrevTrack User2         User3
                No   No   No                    MediaStop    MediaPlayPause AudioMute
 """
@@ -259,8 +262,8 @@ No   No   No   No   No                         User7        MediaNextTrack Media
 [[layer]]
 name = "SYM"
 keys = """
-SHIFTED(LeftBracket) SHIFTED(Kc7) SHIFTED(Kc8) SHIFTED(Kc9) SHIFTED(RightBracket)   No No No No No
-SHIFTED(Semicolon)   SHIFTED(Kc4) SHIFTED(Kc5) SHIFTED(Kc6) SHIFTED(Equal)          No RShift RCtrl RAlt RGui
+_______ SHIFTED(LeftBracket) SHIFTED(Kc7) SHIFTED(Kc8) SHIFTED(Kc9) SHIFTED(RightBracket)   No No No No No _______
+_______ SHIFTED(Semicolon)   SHIFTED(Kc4) SHIFTED(Kc5) SHIFTED(Kc6) SHIFTED(Equal)          No RShift RCtrl RAlt RGui _______
 SHIFTED(Grave)       SHIFTED(Kc1) SHIFTED(Kc2) SHIFTED(Kc3) SHIFTED(Backslash)      No No No No No
                      SHIFTED(Kc9) SHIFTED(Kc0) SHIFTED(Minus)                       No No No
 """
@@ -272,8 +275,8 @@ SHIFTED(Grave)       SHIFTED(Kc1) SHIFTED(Kc2) SHIFTED(Kc3) SHIFTED(Backslash)  
 [[layer]]
 name = "FUN"
 keys = """
-F12 F7 F8 F9 WM(Kc4, LShift | LGui)             No No No No No
-F11 F4 F5 F6 No                                 No RShift RCtrl RAlt RGui
+_______ F12 F7 F8 F9 WM(Kc4, LShift | LGui)             No No No No No _______
+_______ F11 F4 F5 F6 No                                 No RShift RCtrl RAlt RGui _______
 F10 F1 F2 F3 No                                 No No No No No
            Menu Space Tab                       No No No
 """
@@ -286,8 +289,8 @@ F10 F1 F2 F3 No                                 No No No No No
 [[layer]]
 name = "MOUSE"
 keys = """
-No   No   No   No   No                          No             No             No             No             No
-LGui LAlt LCtrl LShift No                        MouseLeft      MouseDown      MouseUp        MouseRight     No
+_______ No   No   No   No   No                          No             No             No             No             No _______
+_______ LGui LAlt LCtrl LShift No                        MouseLeft      MouseDown      MouseUp        MouseRight     No _______
 No   No   No   No   No                           MouseWheelLeft MouseWheelDown MouseWheelUp   MouseWheelRight No
                MouseBtn4 MouseBtn5 No             MouseBtn1      MouseBtn3      MouseBtn2
 """
@@ -299,8 +302,8 @@ No   No   No   No   No                           MouseWheelLeft MouseWheelDown M
 [[layer]]
 name = "DISPOFF"
 keys = """
-_______ _______ _______ _______ _______        _______ _______ _______ _______ _______
-_______ _______ _______ _______ _______        _______ _______ _______ _______ _______
+_______ _______ _______ _______ _______ _______        _______ _______ _______ _______ _______ _______
+_______ _______ _______ _______ _______ _______        _______ _______ _______ _______ _______ _______
 _______ _______ _______ _______ _______        _______ _______ _______ _______ _______
                 _______ _______ _______         _______ _______ _______
 """

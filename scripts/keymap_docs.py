@@ -159,6 +159,20 @@ def tokenize_keys(keys_str: str) -> list[str]:
 def token_labels(token: str) -> tuple[str, str | None]:
     """Return (tap_label, hold_label_or_None) for a single RMK key token."""
 
+    # MT(key, mod1 | mod2 | ..., profile) — modifier-combination hold
+    m = re.fullmatch(r"MT\(\s*(\w+)\s*,\s*([\w \t|]+?)\s*,\s*\w+\s*\)", token)
+    if m and "|" in m.group(2):
+        key, mods_str = m.group(1), m.group(2)
+        mods = {s.strip() for s in mods_str.split("|")}
+        base = {m_.lstrip("LR") for m_ in mods}
+        if base == {"Gui", "Ctrl", "Alt", "Shift"}:
+            hold = "Hyper"
+        elif base == {"Gui", "Ctrl", "Alt"}:
+            hold = "Meh"
+        else:
+            hold = "".join(MOD_SYM.get(mod, mod) for mod in sorted(mods))
+        return KEYCODE_DISPLAY.get(key, key), hold
+
     # MT(key, mod, profile)
     m = re.fullmatch(r"MT\(\s*(\w+)\s*,\s*(\w+)\s*,\s*\w+\s*\)", token)
     if m:
@@ -218,9 +232,9 @@ def load_layers(toml_path: str) -> list[dict]:
     for layer in raw_layers:
         name = layer["name"]
         tokens = tokenize_keys(layer["keys"])
-        if len(tokens) != 36:
+        if len(tokens) != 40:
             print(
-                f"Error: layer '{name}' has {len(tokens)} tokens (expected 36)",
+                f"Error: layer '{name}' has {len(tokens)} tokens (expected 40)",
                 file=sys.stderr,
             )
             ok = False
@@ -251,16 +265,20 @@ def _yaml_key(tap: str, hold: str | None) -> str:
 
 
 def build_keymap_yaml(layers: list[dict]) -> str:
-    """Build a keymap-drawer YAML string for a 36-key split Corne."""
+    """Build a keymap-drawer YAML string for a 40-key split Corne.
+
+    The physical grid is 3x6 split + 3 thumbs per side (42 slots); the two
+    unmapped bottom-row outer positions are emitted as null (blank keys).
+    """
     lines: list[str] = []
 
-    # Physical layout — 3-row × 5-col split, 3 thumb keys each side
+    # Physical layout — 3-row × 6-col split, 3 thumb keys each side
     lines += [
         "layout:",
         "  ortho_layout:",
         "    split: true",
         "    rows: 3",
-        "    columns: 5",
+        "    columns: 6",
         "    thumbs: 3",
         "",
         "layers:",
@@ -270,8 +288,17 @@ def build_keymap_yaml(layers: list[dict]) -> str:
         name = layer["name"]
         keys = layer["keys"]
         lines.append(f"  {name}:")
-        for tap, hold in keys:
-            lines.append(f"    - {_yaml_key(tap, hold)}")
+        # rows 0-1 span all 12 columns; row 2 lacks the outer pinky pair,
+        # so pad with null at (2,0) and (2,11) to fill the 42-slot grid.
+        slots: list = list(keys[0:24])
+        slots += [None] + list(keys[24:34]) + [None]
+        slots += list(keys[34:40])
+        for slot in slots:
+            if slot is None:
+                lines.append("    - null")
+            else:
+                tap, hold = slot
+                lines.append(f"    - {_yaml_key(tap, hold)}")
         lines.append("")
 
     return "\n".join(lines)
@@ -317,19 +344,20 @@ def cmd_svg(toml_path: str, out_path: str) -> None:
 # HTML subcommand — self-contained browser viewer
 # ─────────────────────────────────────────────────────────────────────────────
 
-# 36-key indices per region (row-major order from token list):
-# keys 0–9   = row 0 (left 0-4, right 5-9)
-# keys 10-19 = row 1 (left 10-14, right 15-19)
-# keys 20-29 = row 2 (left 20-24, right 25-29)
-# keys 30-35 = thumb row (left 30-32, right 33-35)
+# 40-key indices per region (row-major order from token list):
+# keys 0-11  = row 0 (left 0-5, right 6-11) — outer pair = Hyper
+# keys 12-23 = row 1 (left 12-17, right 18-23) — outer pair = Meh
+# keys 24-33 = row 2 (left 24-28, right 29-33) — no outer columns
+# keys 34-39 = thumb row (left 34-36, right 37-39)
+# None = blank placeholder cell keeping row 2 column-aligned under rows 0/1.
 
 _MAIN_ROWS = [
-    (range(0, 5),   range(5, 10)),
-    (range(10, 15), range(15, 20)),
-    (range(20, 25), range(25, 30)),
+    ([0, 1, 2, 3, 4, 5],        [6, 7, 8, 9, 10, 11]),
+    ([12, 13, 14, 15, 16, 17],  [18, 19, 20, 21, 22, 23]),
+    ([None, 24, 25, 26, 27, 28], [29, 30, 31, 32, 33, None]),
 ]
-_THUMB_LEFT  = range(30, 33)
-_THUMB_RIGHT = range(33, 36)
+_THUMB_LEFT  = range(34, 37)
+_THUMB_RIGHT = range(37, 40)
 
 
 def _esc(s: str) -> str:
@@ -386,12 +414,18 @@ def _layer_html(idx: int, layer: dict, activator: tuple[int, str] | None = None)
         parts.append('    <div class="kb-row">')
         parts.append('      <div class="kb-half">')
         for i in left_range:
-            parts.append("        " + _key_cell_html(*keys[i], activator_label if i == activator_idx else None))
+            if i is None:
+                parts.append('        <div class="key key-blank"></div>')
+            else:
+                parts.append("        " + _key_cell_html(*keys[i], activator_label if i == activator_idx else None))
         parts.append("      </div>")
         parts.append('      <div class="kb-split-gap"></div>')
         parts.append('      <div class="kb-half">')
         for i in right_range:
-            parts.append("        " + _key_cell_html(*keys[i], activator_label if i == activator_idx else None))
+            if i is None:
+                parts.append('        <div class="key key-blank"></div>')
+            else:
+                parts.append("        " + _key_cell_html(*keys[i], activator_label if i == activator_idx else None))
         parts.append("      </div>")
         parts.append("    </div>")
 
@@ -574,7 +608,7 @@ body { background: var(--bg); color: var(--tap-color); }
 .kb-split-gap { width: 30px; flex-shrink: 0; }
 
 .thumb-half { display: flex; gap: 5px; align-items: center; }
-.thumb-spacer { width: 121px; flex-shrink: 0; }
+.thumb-spacer { width: 184px; flex-shrink: 0; }
 
 .key {
   width: 58px;
@@ -594,6 +628,7 @@ body { background: var(--bg); color: var(--tap-color); }
 }
 .key:hover { background: var(--key-hover); }
 .key.empty { background: transparent; border-color: #2a2d3e; }
+.key-blank { background: transparent; border: none; pointer-events: none; }
 .key-activator {
   display: flex;
   flex-direction: column;
@@ -675,7 +710,7 @@ body { background: var(--bg); color: var(--tap-color); }
   .key { width: 48px; height: 44px; }
   .tap { font-size: 12px; }
   .hold { font-size: 8px; }
-  .thumb-spacer { width: 101px; }
+  .thumb-spacer { width: 153px; }
 }
 """
 
@@ -768,7 +803,7 @@ def build_html(layers: list[dict]) -> str:
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1>yuyudhan-1</h1>
-        <p class="subtitle">Corne 36-key keymap</p>
+        <p class="subtitle">Corne 40-key keymap</p>
       </div>
       <nav class="layer-nav" role="listbox" aria-label="Keymap layers">
         {nav_items}
