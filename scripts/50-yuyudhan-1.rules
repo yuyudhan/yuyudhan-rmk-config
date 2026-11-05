@@ -1,0 +1,9 @@
+# udev rules for flashing/configuring yuyudhan-1 from Linux without sudo.
+# Installed by `just setup-linux` into /etc/udev/rules.d/.
+
+# nice!nano v2 Adafruit nRF52 UF2 bootloader (VID 0x239a): USB device + CDC serial.
+SUBSYSTEM=="usb", ATTR{idVendor}=="239a", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="239a", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+
+# yuyudhan-1 running RMK (vendor_id/product_id from config/keyboard.toml): Vial over USB HID.
+KERNEL=="hidraw*", ATTRS{idVendor}=="4c4b", ATTRS{idProduct}=="7975", MODE="0660", GROUP="plugdev", TAG+="uaccess"

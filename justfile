@@ -20,7 +20,11 @@
 # Nice!nano bootloader mount point (double-tap reset to expose it).
 # Override with NICENANO=/path; otherwise macOS /Volumes/NICENANO, or on Linux the
 # first existing of /media/$USER/NICENANO and /run/media/$USER/NICENANO.
+# On Linux `just flash` uses the drive's current mount, else mounts NICENANO_LINUX.
 NICENANO := env_var_or_default("NICENANO", if os() == "macos" { "/Volumes/NICENANO" } else { if path_exists("/run/media/" + env_var_or_default("USER", "") + "/NICENANO") == "true" { "/run/media/" + env_var_or_default("USER", "") + "/NICENANO" } else { "/media/" + env_var_or_default("USER", "") + "/NICENANO" } })
+
+# Linux: fstab user-mount point for the bootloader drive (created by `just setup-linux`).
+NICENANO_LINUX := "/mnt/nicenano"
 
 # Keymap config (single source of truth).
 KEYMAP := "config/keyboard.toml"
@@ -37,6 +41,24 @@ setup:
     cargo install cargo-make
     cargo install cargo-binutils
     cargo install cargo-hex-to-uf2
+
+# Creates the NICENANO bootloader-drive fstab user mount at {{NICENANO_LINUX}}, udev rules, plugdev/dialout.
+# One-time Linux host setup for no-sudo flashing (runs sudo itself). Idempotent.
+setup-linux:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [ "$(uname -s)" = "Linux" ] || { echo "setup-linux is for Linux hosts only." >&2; exit 1; }
+    sudo install -m 0644 scripts/50-yuyudhan-1.rules /etc/udev/rules.d/50-yuyudhan-1.rules
+    sudo udevadm control --reload
+    sudo udevadm trigger
+    sudo mkdir -p "{{NICENANO_LINUX}}"
+    line="LABEL=NICENANO {{NICENANO_LINUX}} vfat noauto,user,nofail,uid=$(id -u),gid=$(id -g),umask=022 0 0"
+    if ! grep -q '^LABEL=NICENANO ' /etc/fstab; then
+      echo "$line" | sudo tee -a /etc/fstab >/dev/null
+      sudo systemctl daemon-reload
+    fi
+    sudo usermod -aG plugdev,dialout "$(id -un)"
+    echo "==> Linux flashing setup done (re-login once if plugdev/dialout were just added)."
 
 # Build firmware. target = left | right | both. Archives to firmware/<datetime>/.
 build target:
@@ -128,8 +150,9 @@ expand target="left":
       *) echo "Unknown target: {{target}}  (valid: left | right)" >&2; exit 1 ;;
     esac
 
-# Flash the newest built .uf2 onto a mounted NICENANO drive. target = left | right.
-# Double-tap the reset button on the target half FIRST so it mounts as {{NICENANO}}.
+# Flash the newest built .uf2 onto the NICENANO bootloader drive. target = left | right.
+# Double-tap the reset button on the target half FIRST so the drive appears
+# (macOS: mounted at {{NICENANO}}; Linux: mounted at {{NICENANO_LINUX}} by this recipe).
 # Pulls the newest matching .uf2 from firmware/<datetime>/ (falls back to repo root).
 # e.g. `just flash left`                  -> newest normal build
 #      `just flash left 0.0.8`            -> newest archive matching y0.0.8
@@ -174,17 +197,35 @@ flash target *args:
       echo "!!  Next: let it boot once, double-tap reset again, then run: just flash {{target}}"
     fi
     if [ "$dry" = 1 ]; then
-      echo "==> [dry-run] would flash $file -> {{NICENANO}}"; exit 0
+      echo "==> [dry-run] would flash $file -> NICENANO drive"; exit 0
     fi
-    if [ ! -d "{{NICENANO}}" ]; then
-      echo "{{NICENANO}} not mounted. Double-tap reset on the {{target}} half, then re-run." >&2; exit 1
-    fi
-    echo "==> Flashing $file -> {{NICENANO}}"
-    if cp "$file" "{{NICENANO}}"/ 2>/dev/null; then
+    case "$(uname -s)" in
+      Linux)
+        dev="/dev/disk/by-label/NICENANO"
+        if [ ! -e "$dev" ]; then
+          echo "No NICENANO drive found. Double-tap reset on the {{target}} half, then re-run." >&2; exit 1
+        fi
+        mnt="$(findmnt -rno TARGET -S "$(readlink -f "$dev")" | head -1 || true)"
+        if [ -z "$mnt" ]; then
+          mount "{{NICENANO_LINUX}}"
+          mnt="{{NICENANO_LINUX}}"
+        fi
+        ;;
+      *)
+        mnt="{{NICENANO}}"
+        if [ ! -d "$mnt" ]; then
+          echo "$mnt not mounted. Double-tap reset on the {{target}} half, then re-run." >&2; exit 1
+        fi
+        ;;
+    esac
+    echo "==> Flashing $file -> $mnt"
+    if cp "$file" "$mnt"/ 2>/dev/null && sync; then
       echo "==> Done. The nice!nano reboots automatically."
     else
       echo "==> cp reported an error — normal: the nice!nano reboots and unmounts mid-write. Flash succeeded."
     fi
+    # Linux keeps a stale mount after the board reboots; drop it (no-op if already gone).
+    if [ "$(uname -s)" = "Linux" ]; then umount "$mnt" 2>/dev/null || true; fi
     if [ "$clear" = 1 ]; then
       echo "==> Storage wiped on boot. Now double-tap reset on the {{target}} half and run: just flash {{target}}"
     fi

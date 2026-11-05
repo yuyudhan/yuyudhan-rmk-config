@@ -126,6 +126,25 @@ The same works for the right half (`just flash right --clear-storage`): the peri
 its split bond to the central in storage, so clearing it forces the halves to re-pair — clear
 both halves together if you do it. Hosts must then be re-paired to the left half.
 
+### Flash from Linux
+
+Same UF2 drag-and-drop, no probe. One-time host setup (installs
+`scripts/50-yuyudhan-1.rules` into `/etc/udev/rules.d/`, adds a no-sudo `user` fstab mount for the
+`NICENANO` drive at `/mnt/nicenano`, and adds you to `plugdev`/`dialout`):
+
+```sh
+just setup && just setup-linux
+```
+
+Then, per half:
+
+1. Build if needed: `just build both` (or `just build left`).
+2. Plug the half into the Linux machine over USB and double-tap its reset button; it shows up as
+   the `NICENANO` drive (`/dev/disk/by-label/NICENANO`).
+3. Run `just flash left` (or `just flash right`). It mounts the drive at `/mnt/nicenano` (or uses
+   an existing desktop automount), copies the `.uf2`, syncs, and unmounts; the board reboots.
+4. Unplug, then repeat for the other half.
+
 ## Editing the keymap
 
 - **Static:** edit the `[[keymap.layer]]` `keys` blocks in `config/keyboard.toml`. The
