@@ -8,19 +8,35 @@ product_id = 0x7975
 manufacturer = "yuyudhan"
 chip = "nrf52840"
 
+# nice!nano v2 carries the REG1 DC/DC inductor (the stock RMK nrf52840 default
+# leaves both regulators on LDO). REG0 stays off: only REG1 is enabled.
+[chip.nrf52840]
+dcdc_reg0 = false
+dcdc_reg1 = true
+
 [rmk]
 ble_profiles_num = 4
+# Mouse keys (RMK v0.9.0 exposes only the repeat interval in keyboard.toml;
+# step 5 px, 3x max multiplier, 50 ticks to max and the 100 ms first-repeat
+# delay are fixed). 10 ms (default 20): a tap still moves one 5 px step, a
+# hold ramps from ~500 to ~1500 px/s in ~0.5 s (was ~250 -> ~750 px/s in ~1 s).
+mouse_key_interval = 10
 split_central_sleep_timeout_seconds = 300
 
 [storage]
-# clear_storage = true wipes ALL storage every boot — see docs before enabling.
+# clear_storage = true wipes ALL storage (keymap AND BLE bonds) every boot.
+# After editing the keymap below, the Vial copy in flash still wins: set
+# clear_layout = true for ONE build/flash (resets the keymap only, keeps bonds),
+# then set it back to false.
 clear_storage = false
+clear_layout = false
 
 [ble]
 enabled = true
+# vddh: RMK reads VDDH/5 directly; ADC divider values would be ignored.
 battery_adc_pin = "vddh"
-adc_divider_measured = 2000
-adc_divider_total = 2806
+# Connection and split-link TX power (sdc_default_tx_power_set). Without it
+# they stay at the 0 dBm reset value; RMK only forces +8 dBm on advertising.
 default_tx_power = 8
 
 [host]
@@ -29,16 +45,18 @@ unlock_keys = [[3, 3], [3, 4]]
 [layout]
 rows = 4
 cols = 12
-layers = 8
-matrix_map = """
+map = """
 (0,0,L) (0,1,L) (0,2,L) (0,3,L) (0,4,L) (0,5,L)   (0,6,R) (0,7,R) (0,8,R) (0,9,R) (0,10,R) (0,11,R)
 (1,0,L) (1,1,L) (1,2,L) (1,3,L) (1,4,L) (1,5,L)   (1,6,R) (1,7,R) (1,8,R) (1,9,R) (1,10,R) (1,11,R)
 (2,0,L) (2,1,L) (2,2,L) (2,3,L) (2,4,L) (2,5,L)   (2,6,R) (2,7,R) (2,8,R) (2,9,R) (2,10,R) (2,11,R)
                 (3,3,L) (3,4,L) (3,5,L)   (3,6,R) (3,7,R) (3,8,R)
 """
 
+[keymap]
+layers = 8
+
 # Layer 0 — BASE (QWERTY + HRM)
-[[layer]]
+[[keymap.layer]]
 name = "BASE"
 keys = """
 MT(No, LGui | LCtrl | LAlt | LShift, TLI) Q                W                E                R                T                    Y                U                I                O                P                MT(No, LGui | LCtrl | LAlt | LShift, TLI)
@@ -48,7 +66,7 @@ MT(No, LCtrl | LAlt, TLI) Z                X                C                V  
 """
 
 # Layer 1 — NAV
-[[layer]]
+[[keymap.layer]]
 name = "NAV"
 keys = """
 _______ No   No   No   No   No                        No        End       Home      No        CapsLock _______
@@ -58,7 +76,7 @@ No   No   No   No   No   No                        No        PageDown  PageUp   
 """
 
 # Layer 2 — NUM
-[[layer]]
+[[keymap.layer]]
 name = "NUM"
 keys = """
 _______ LeftBracket Kc7 Kc8 Kc9 RightBracket          No No No No No _______
@@ -68,17 +86,17 @@ No       Grave       Kc1 Kc2 Kc3 Backslash             No No No No No No
 """
 
 # Layer 3 — MEDIA
-[[layer]]
+[[keymap.layer]]
 name = "MEDIA"
 keys = """
-_______ No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 User9 _______
+_______ No   No   No   No   No                        WM(Q, LCtrl | LGui) BrightnessDown BrightnessUp User6 No _______
 _______ LGui LAlt LCtrl LShift No                      TG(7)        AudioVolDown   AudioVolUp   User0          User1 _______
 No   No   No   No   No   No                         User7        MediaNextTrack MediaPrevTrack User2         User3 No
                No   No   No                    MediaStop    MediaPlayPause AudioMute
 """
 
 # Layer 4 — SYM
-[[layer]]
+[[keymap.layer]]
 name = "SYM"
 keys = """
 _______ SHIFTED(LeftBracket) SHIFTED(Kc7) SHIFTED(Kc8) SHIFTED(Kc9) SHIFTED(RightBracket)   No No No No No _______
@@ -88,7 +106,7 @@ No       SHIFTED(Grave)       SHIFTED(Kc1) SHIFTED(Kc2) SHIFTED(Kc3) SHIFTED(Bac
 """
 
 # Layer 5 — FUN
-[[layer]]
+[[keymap.layer]]
 name = "FUN"
 keys = """
 _______ F12 F7 F8 F9 WM(Kc4, LShift | LGui)             No No No No No _______
@@ -97,18 +115,18 @@ No       F10 F1 F2 F3 No                                 No No No No No No
            Menu Space Tab                       No No No
 """
 
-# Layer 6 — MOUSE
-[[layer]]
+# Layer 6 — MOUSE (MouseAccel2 on G: hold it with the left index for 2x speed)
+[[keymap.layer]]
 name = "MOUSE"
 keys = """
 _______ No   No   No   No   No                          No             No             No             No             No _______
-_______ LGui LAlt LCtrl LShift No                        MouseLeft      MouseDown      MouseUp        MouseRight     No _______
+_______ LGui LAlt LCtrl LShift MouseAccel2               MouseLeft      MouseDown      MouseUp        MouseRight     No _______
 No   No   No   No   No   No                           MouseWheelLeft MouseWheelDown MouseWheelUp   MouseWheelRight No No
                MouseBtn4 MouseBtn5 No             MouseBtn1      MouseBtn3      MouseBtn2
 """
 
 # Layer 7 — DISPOFF (toggle via TG(7) on MEDIA; blanks both OLEDs)
-[[layer]]
+[[keymap.layer]]
 name = "DISPOFF"
 keys = """
 _______ _______ _______ _______ _______ _______        _______ _______ _______ _______ _______ _______
@@ -138,8 +156,6 @@ row_offset = 0
 col_offset = 0
 ble_addr = [0x18, 0xe2, 0x21, 0x80, 0xc0, 0xc7]
 battery_adc_pin = "vddh"
-adc_divider_measured = 2000
-adc_divider_total = 2806
 
 [split.central.matrix]
 matrix_type = "normal"
@@ -165,8 +181,6 @@ row_offset = 0
 col_offset = 6
 ble_addr = [0x7e, 0xfe, 0x73, 0x9e, 0x66, 0xe3]
 battery_adc_pin = "vddh"
-adc_divider_measured = 2000
-adc_divider_total = 2806
 
 [split.peripheral.matrix]
 matrix_type = "normal"

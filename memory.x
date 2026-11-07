@@ -1,8 +1,11 @@
 MEMORY
 {
   /* NOTE 1 K = 1 KiB = 1024 bytes */
-  /* These values correspond to the nRF52840 WITH Adafruit nRF52 bootloader */
-  FLASH : ORIGIN = 0x00001000, LENGTH = 1020K
+  /* These values correspond to the nRF52840 WITH Adafruit nRF52 bootloader.  */
+  /* App ends at 0xA0000, where RMK storage starts (128K, to 0xC0000); the     */
+  /* bootloader sits at 0xF4000. Capping LENGTH makes an oversized image fail */
+  /* to link instead of silently overwriting storage or the bootloader.       */
+  FLASH : ORIGIN = 0x00001000, LENGTH = 636K
   RAM : ORIGIN = 0x20000008, LENGTH = 255K
 
   /* These values correspond to the nRF52840 */

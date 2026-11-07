@@ -8,7 +8,7 @@
 //!   rows  27-44   Layer name (adaptive font; inverted box when not BASE)
 //!   rows  48-57   WPM  "W{n}" FONT_6X10
 //!   rows  61-75   BLE profile "P{n}" FONT_9X15_BOLD (centred)
-//!   rows  77-84   BLE state "~" / "USB" FONT_5X8 (blank when connected)
+//!   rows  77-84   BLE state "~" FONT_5X8 (blank when connected)
 //!   rows  87-95   Battery gauge (outline + proportional fill; blinks at <20%)
 //!   rows  98-112  Battery number FONT_9X15_BOLD (centred; no "%" — gauge supplies it)
 //!   rows 116-127  Firmware version "{ver}" FONT_6X12 (centred; from VERSION file)
@@ -127,12 +127,15 @@ impl DisplayRenderer<BinaryColor> for StatusRenderer {
 
         // ── 5. BLE state indicator (rows 77–84) ──────────────────────────────
         // Blank when connected (normal operation — no noise).
-        // "~"   when advertising (keyboard is searching for the profile's host).
-        // "USB" when inactive/wired (USB mode; profile memorised and ready).
+        // "~" while the profile's host is not connected yet. RMK reports
+        // `Inactive` for the instant between dropping the old host and starting
+        // to advertise for the new profile (and after an advertising timeout,
+        // when the display is blanked for sleep anyway). It says nothing about
+        // USB — the renderer cannot see the USB state in RMK v0.9.0 — so it is
+        // drawn the same as advertising instead of the old misleading "USB".
         let state_str: &str = match ctx.ble_status.state {
-            BleState::Connected   => "",
-            BleState::Advertising => "~",
-            BleState::Inactive    => "USB",
+            BleState::Connected => "",
+            BleState::Advertising | BleState::Inactive => "~",
         };
         if !state_str.is_empty() {
             // FONT_5X8 advance = 5 px/char.

@@ -62,7 +62,7 @@ KEYCODE_DISPLAY: dict[str, str] = {
     # Bluetooth / output User keys  (ble_profiles_num = 4)
     "User0": "BT0", "User1": "BT1", "User2": "BT2", "User3": "BT3",
     "User4": "BT→", "User5": "BT←",
-    "User6": "ClrBT", "User7": "Out⇄", "User9": "ClrAllBT",
+    "User6": "ClrBT", "User7": "Out⇄",
     # Bare modifiers
     "LGui": "GUI",   "RGui": "GUI",
     "LAlt": "Alt",   "RAlt": "Alt",
@@ -223,9 +223,9 @@ def load_layers(toml_path: str) -> list[dict]:
     with open(path, "rb") as fh:
         data = tomllib.load(fh)
 
-    raw_layers = data.get("layer", [])
+    raw_layers = data.get("keymap", {}).get("layer", [])
     if not raw_layers:
-        sys.exit("Error: no [[layer]] blocks found in TOML")
+        sys.exit("Error: no [[keymap.layer]] blocks found in TOML")
 
     result: list[dict] = []
     ok = True

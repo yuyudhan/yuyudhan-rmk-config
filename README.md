@@ -21,14 +21,14 @@ One profile, one keymap. Everything lives in `config/keyboard.toml`; there is no
 
 ## Layers
 
-7-layer Miryoku-style layout. Layers activate on a thumb **hold**; tap sends the key.
+8-layer Miryoku-style layout (7 typing layers plus DISPOFF). Layers activate on a thumb **hold**; tap sends the key.
 
 | Layer | Thumb (hold) | Contents |
 |-------|--------------|----------|
 | 0 BASE | — | QWERTY + GACS home-row mods (A/S/D/F = GUI/Alt/Ctrl/Shift, mirrored J/K/L/') |
 | 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn |
 | 2 NUM | Backspace | columnar numpad + brackets/symbols on the left hand |
-| 3 MEDIA | Escape | volume, brightness, media transport, Bluetooth (BT0–3 / clear current / clear all / USB-BLE toggle), lock |
+| 3 MEDIA | Escape | volume, brightness, media transport, Bluetooth (BT0–3 / clear current / USB-BLE toggle), lock |
 | 4 SYM | Enter | programmer symbols on the left hand |
 | 5 FUN | Delete | F1–F12 + screenshot ⇧⌘4 (file) + Caps Word |
 | 6 MOUSE | Tab | pointer move, scroll wheel, mouse buttons |
@@ -49,12 +49,24 @@ RMK exposes BLE control as `User` keycodes (4 profiles configured via `ble_profi
 | `User0`–`User3` | select BT profile 0–3 | BT0–BT3 |
 | `User6` | clear bond for current profile | Clear BT |
 | `User7` | toggle output USB ↔ BLE | Switch Output |
-| `User9` | clear bonds of ALL profiles | (custom — no built-in Vial label) |
+
+Positions on MEDIA: `User0` L, `User1` ', `User2` ., `User3` /, `User6` O, `User7` N.
+See [docs/BLUETOOTH.md](docs/BLUETOOTH.md) for the profile model and recovery.
 
 ## Build
 
 Requires [`just`](https://github.com/casey/just), a Rust toolchain, and (one-time) the
-embedded tools. `just setup` installs everything it needs.
+embedded tools. `just setup` installs the Rust-side tools. The build also needs two host
+packages that `just setup` does not install: libclang (bindgen in `nrf-mpsl-sys`; Linux:
+`apt install libclang-dev`) and an `arm-none-eabi-gcc` on `PATH` (C code in
+`p256-cortex-m4-sys`, pulled in by trouble-host 0.8; Linux: `apt install gcc-arm-none-eabi`
+or the Arm GNU toolchain tarball; macOS: `brew install --cask gcc-arm-embedded`).
+On Ubuntu's libclang 14, bindgen also needs clang's builtin headers and the newlib sysroot
+spelled out, or `nrf-mpsl-sys` fails with `'stdint.h' file not found`:
+
+```sh
+export BINDGEN_EXTRA_CLANG_ARGS_thumbv7em_none_eabihf="-isystem /usr/lib/llvm-14/lib/clang/14.0.0/include --sysroot=$(arm-none-eabi-gcc -print-sysroot)"
+```
 
 ```sh
 just                  # list recipes
@@ -79,7 +91,9 @@ automatically; `just clean` wipes `build/` and the Rust cache but keeps the `fir
 
 The nice!nano's Adafruit bootloader accepts drag-and-drop `.uf2` — no probe needed.
 
-1. Double-tap the reset button on a half → it mounts as `/Volumes/NICENANO`.
+1. Double-tap the reset button on a half → it mounts as `NICENANO` (macOS
+   `/Volumes/NICENANO`; Linux `/media/$USER/NICENANO` or `/run/media/$USER/NICENANO`;
+   override with `NICENANO=/path just flash …`).
 2. Flash the matching half:
    ```sh
    just flash left       # left half  (rmk-central.uf2)
@@ -88,12 +102,16 @@ The nice!nano's Adafruit bootloader accepts drag-and-drop `.uf2` — no probe ne
    (Or drag the `.uf2` onto the `NICENANO` drive manually.)
 3. Repeat for the other half. The board reboots and unmounts automatically.
 
-**Remove the USB cable after flashing** — RMK forces USB output mode while cabled.
+**Remove the USB cable after flashing** — with a data cable attached the preferred output
+defaults to USB (toggle with ESC+N).
 
-Reflash the central after any keymap change. The peripheral only needs reflashing when
-firmware (not just the keymap) changes.
+The peripheral only needs reflashing when firmware (not just the keymap) changes.
 
 ## Editing the keymap
 
-- **Static:** edit the `[[layer]]` `keys` blocks in `config/keyboard.toml`, then `just build both` and reflash the central.
+- **Static:** edit the `[[keymap.layer]]` `keys` blocks in `config/keyboard.toml`. The
+  keymap saved in flash (Vial) wins over the TOML, so a plain reflash does NOT apply the
+  edit. Set `clear_layout = true` under `[storage]`, `just build left`, flash the central,
+  then set it back to `false` and build/flash once more. This resets only the keymap; BLE
+  bonds stay. (`clear_storage = true` also wipes the bonds.)
 - **Live:** open [vial.rocks](https://vial.rocks) over USB, hold the two left thumb keys, click **Unlock**, and remap in the browser.

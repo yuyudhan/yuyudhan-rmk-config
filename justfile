@@ -16,7 +16,9 @@
 # Run `just` (no args) to list recipes.
 
 # Nice!nano bootloader mount point (double-tap reset to expose it).
-NICENANO := "/Volumes/NICENANO"
+# Override with NICENANO=/path; otherwise macOS /Volumes/NICENANO, or on Linux the
+# first existing of /media/$USER/NICENANO and /run/media/$USER/NICENANO.
+NICENANO := env_var_or_default("NICENANO", if os() == "macos" { "/Volumes/NICENANO" } else { if path_exists("/run/media/" + env_var_or_default("USER", "") + "/NICENANO") == "true" { "/run/media/" + env_var_or_default("USER", "") + "/NICENANO" } else { "/media/" + env_var_or_default("USER", "") + "/NICENANO" } })
 
 # Keymap config (single source of truth).
 KEYMAP := "config/keyboard.toml"
@@ -87,7 +89,7 @@ check target="both":
 
 # Generate keymap documentation. kind = svg | html.
 #   just docs svg    -> yuyudhan-1_keymap.svg  (keymap-drawer render)
-#   just docs html   -> yuyudhan-1-viewer.html (standalone 7-layer viewer)
+#   just docs html   -> yuyudhan-1-viewer.html (standalone 8-layer viewer)
 docs kind:
     #!/usr/bin/env bash
     set -euo pipefail

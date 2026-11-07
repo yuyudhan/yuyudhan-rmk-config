@@ -7,25 +7,27 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-rmk = { git = "https://github.com/HaoboGu/rmk", features = [
+# Pinned to the RMK v0.9.0 release (rmk-rs/rmk, formerly HaoboGu/rmk).
+# Bump deliberately: change the tag, then run `just check both`.
+rmk = { git = "https://github.com/rmk-rs/rmk", tag = "rmk-v0.9.0", features = [
     "nrf52840_ble",
     "split",
     "async_matrix",
     "adafruit_bl",
     "ssd1306",
 ] }
-nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc", features = [
+nrf-sdc = { version = "0.4.0", features = [
     "defmt",
     "peripheral",
     "central",
     "nrf52840",
 ] }
-nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc", features = [
+nrf-mpsl = { version = "0.4.0", features = [
     "defmt",
     "critical-section-impl",
     "nrf52840",
 ] }
-bt-hci = { version = "0.9", features = ["defmt"] }
+bt-hci = { version = "0.10", features = ["defmt"] }
 
 cortex-m = "0.7.7"
 cortex-m-rt = "0.7.5"
@@ -49,10 +51,6 @@ defmt-rtt = "1.0"
 panic-probe = { version = "1.0", features = ["print-defmt"] }
 static_cell = "2"
 embedded-graphics = "0.8"
-
-rand = { version = "0.8.4", default-features = false }
-rand_core = { version = "0.6" }
-rand_chacha = { version = "0.3", default-features = false }
 
 [build-dependencies]
 xz2 = "0.1.7"
