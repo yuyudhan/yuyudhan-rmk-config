@@ -9,9 +9,11 @@
 #   just docs html       # render config/keyboard.toml -> yuyudhan-1-viewer.html
 #   just flash left      # copy newest rmk-central.uf2 onto a mounted NICENANO
 #   just flash right     # copy newest rmk-peripheral.uf2 onto a mounted NICENANO
+#   just flash left --clear-storage   # one-shot wipe image; then `just flash left`
 #
-# Every build archives its UF2(s) + a config snapshot into a local firmware/<datetime>/
-# directory (gitignored) so you can always re-flash an older build.
+# Every build archives its UF2(s) — a normal and a *-clear-storage.uf2 per half —
+# + a config snapshot into a local firmware/<datetime>_y<ver>/ directory (gitignored)
+# so you can always re-flash an older build.
 #
 # Run `just` (no args) to list recipes.
 
@@ -56,17 +58,33 @@ build target:
     fi
     version="$(tr -d '[:space:]' < VERSION)"
     # Compile -> hex -> uf2 via cargo-make. All outputs land in ./build/ (staging).
-    case "{{target}}" in
-      left)  cargo make uf2-central --release ;;
-      right) cargo make uf2-peripheral --release ;;
-      both)  cargo make uf2 --release ;;
-    esac
-    # Move the finished UF2(s) from build/ into a timestamped, version-stamped keepsake dir.
+    uf2() {
+      case "{{target}}" in
+        left)  cargo make uf2-central --release ;;
+        right) cargo make uf2-peripheral --release ;;
+        both)  cargo make uf2 --release ;;
+      esac
+    }
     stamp="$(date '+%Y-%m-%d_%H-%M-%S')"
     dest="firmware/${stamp}_y${version}"
-    mkdir -p "$dest"
-    case "{{target}}" in left|both)  [ -f build/rmk-central.uf2 ]    && mv build/rmk-central.uf2    "$dest/";; esac
-    case "{{target}}" in right|both) [ -f build/rmk-peripheral.uf2 ] && mv build/rmk-peripheral.uf2 "$dest/";; esac
+    mkdir -p "$dest" build
+    # Archive build/<name>.uf2 as $dest/<name><suffix>.uf2 for the halves built.
+    stash() {
+      case "{{target}}" in left|both)  mv build/rmk-central.uf2    "$dest/rmk-central$1.uf2";; esac
+      case "{{target}}" in right|both) mv build/rmk-peripheral.uf2 "$dest/rmk-peripheral$1.uf2";; esac
+    }
+    # 1) Normal image from config/keyboard.toml as-is.
+    uf2
+    stash ""
+    # 2) Clear-storage image from a temp copy with clear_storage = true, selected via
+    #    KEYBOARD_TOML_PATH (an exported env var wins over .cargo/config.toml [env]).
+    #    config/keyboard.toml itself is never edited.
+    tmp_toml="$PWD/build/keyboard-clear-storage.toml"
+    sed -E 's/^clear_storage[[:space:]]*=.*/clear_storage = true/' {{KEYMAP}} > "$tmp_toml"
+    grep -qE '^clear_storage = true$' "$tmp_toml" || { echo "Could not set clear_storage in $tmp_toml" >&2; exit 1; }
+    KEYBOARD_TOML_PATH="$tmp_toml" uf2
+    stash "-clear-storage"
+    rm -f "$tmp_toml"
     # Snapshot the config + keymap visuals alongside the firmware (copies — sources stay in place).
     cp {{KEYMAP}} "$dest/"
     cp config/vial.json "$dest/" 2>/dev/null || true
@@ -113,23 +131,35 @@ expand target="left":
 # Flash the newest built .uf2 onto a mounted NICENANO drive. target = left | right.
 # Double-tap the reset button on the target half FIRST so it mounts as {{NICENANO}}.
 # Pulls the newest matching .uf2 from firmware/<datetime>/ (falls back to repo root).
-# e.g. `just flash left`         -> newest build
-#      `just flash left 0.0.8`   -> newest archive matching y0.0.8
+# e.g. `just flash left`                  -> newest normal build
+#      `just flash left 0.0.8`            -> newest archive matching y0.0.8
+#      `just flash left --clear-storage`  -> clear-storage image (wipes bonds + keymap)
+#      `just flash left --dry-run`        -> only print which file would be flashed
 # (flashing is destructive)
-flash target ver="":
+flash target *args:
     #!/usr/bin/env bash
     set -euo pipefail
+    clear=0; dry=0; ver=""
+    for a in {{args}}; do
+      case "$a" in
+        --clear-storage) clear=1 ;;
+        --dry-run) dry=1 ;;
+        -*) echo "Unknown flag: $a  (valid: --clear-storage --dry-run)" >&2; exit 1 ;;
+        *) ver="$a" ;;
+      esac
+    done
+    suffix=""; [ "$clear" = 1 ] && suffix="-clear-storage"
     case "{{target}}" in
-      left)  name="rmk-central.uf2" ;;
-      right) name="rmk-peripheral.uf2" ;;
+      left)  name="rmk-central${suffix}.uf2" ;;
+      right) name="rmk-peripheral${suffix}.uf2" ;;
       *) echo "Unknown target: {{target}}  (valid: left | right)" >&2; exit 1 ;;
     esac
     # Newest archived copy by mtime (optionally filtered by version), else the
     # loose repo-root build.
-    if [ -n "{{ver}}" ]; then
-      file="$(ls -1t firmware/*_y{{ver}}/"$name" 2>/dev/null | head -1 || true)"
+    if [ -n "$ver" ]; then
+      file="$(ls -1t firmware/*_y"$ver"/"$name" 2>/dev/null | head -1 || true)"
       if [ -z "$file" ]; then
-        echo "No $name found for version y{{ver}} in firmware/." >&2; exit 1
+        echo "No $name found for version y$ver in firmware/." >&2; exit 1
       fi
     else
       file="$(ls -1t firmware/*/"$name" 2>/dev/null | head -1 || true)"
@@ -137,6 +167,14 @@ flash target ver="":
       if [ -z "$file" ]; then
         echo "No $name found. Build it first: just build {{target}}" >&2; exit 1
       fi
+    fi
+    if [ "$clear" = 1 ]; then
+      echo "!!  CLEAR-STORAGE image: wipes ALL BLE pairings and the saved (Vial) keymap"
+      echo "!!  on the {{target}} half, and keeps wiping on EVERY boot until reflashed."
+      echo "!!  Next: let it boot once, double-tap reset again, then run: just flash {{target}}"
+    fi
+    if [ "$dry" = 1 ]; then
+      echo "==> [dry-run] would flash $file -> {{NICENANO}}"; exit 0
     fi
     if [ ! -d "{{NICENANO}}" ]; then
       echo "{{NICENANO}} not mounted. Double-tap reset on the {{target}} half, then re-run." >&2; exit 1
@@ -146,6 +184,9 @@ flash target ver="":
       echo "==> Done. The nice!nano reboots automatically."
     else
       echo "==> cp reported an error — normal: the nice!nano reboots and unmounts mid-write. Flash succeeded."
+    fi
+    if [ "$clear" = 1 ]; then
+      echo "==> Storage wiped on boot. Now double-tap reset on the {{target}} half and run: just flash {{target}}"
     fi
 
 # Remove the Rust build cache + the build/ staging dir (keeps firmware/<datetime>/ archive).

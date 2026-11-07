@@ -82,10 +82,14 @@ just clean            # wipe Rust cache + build/ staging (keeps local firmware/ 
 ```
 
 `just build <target>` runs the `cargo make` chain (compile → objcopy → hex → uf2), which writes all
-intermediates into a gitignored `build/` staging dir — never the repo root. It then moves the
-finished `.uf2`(s) into a local `firmware/<datetime>/` directory (gitignored), alongside a snapshot
-of the config and keymap visuals. `just flash` pulls the newest matching `.uf2` from there
-automatically; `just clean` wipes `build/` and the Rust cache but keeps the `firmware/` archive.
+intermediates into a gitignored `build/` staging dir — never the repo root. It runs the chain twice:
+once from `config/keyboard.toml` as-is, and once with `clear_storage = true` from a temp copy
+(`build/keyboard-clear-storage.toml`, selected via `KEYBOARD_TOML_PATH`; the real file is never
+edited). Both sets land in one local `firmware/<datetime>_y<ver>/` directory (gitignored), e.g.
+`rmk-central.uf2`, `rmk-central-clear-storage.uf2`, `rmk-peripheral.uf2`,
+`rmk-peripheral-clear-storage.uf2`, alongside a snapshot of the config and keymap visuals.
+`just flash` pulls the newest matching `.uf2` from there automatically; `just clean` wipes
+`build/` and the Rust cache but keeps the `firmware/` archive.
 
 ## Flash
 
@@ -98,6 +102,8 @@ The nice!nano's Adafruit bootloader accepts drag-and-drop `.uf2` — no probe ne
    ```sh
    just flash left       # left half  (rmk-central.uf2)
    just flash right      # right half (rmk-peripheral.uf2)
+   just flash left 0.0.41          # newest archive of y0.0.41
+   just flash left --dry-run       # only print which file would be flashed
    ```
    (Or drag the `.uf2` onto the `NICENANO` drive manually.)
 3. Repeat for the other half. The board reboots and unmounts automatically.
@@ -106,6 +112,19 @@ The nice!nano's Adafruit bootloader accepts drag-and-drop `.uf2` — no probe ne
 defaults to USB (toggle with ESC+N).
 
 The peripheral only needs reflashing when firmware (not just the keymap) changes.
+
+### Clearing storage (pairings + saved keymap)
+
+A clear-storage image wipes **all BLE bonds and the saved (Vial) keymap on every boot**, so
+it must always be followed by a normal flash:
+
+1. Double-tap reset on the half, then `just flash left --clear-storage` (prints a warning).
+2. Let it boot once (storage is wiped).
+3. Double-tap reset again, then `just flash left`.
+
+The same works for the right half (`just flash right --clear-storage`): the peripheral keeps
+its split bond to the central in storage, so clearing it forces the halves to re-pair — clear
+both halves together if you do it. Hosts must then be re-paired to the left half.
 
 ## Editing the keymap
 

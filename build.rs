@@ -20,6 +20,13 @@ use xz2::read::XzEncoder;
 
 fn main() {
     println!("cargo:rerun-if-changed=config/keyboard.toml");
+    // `just build` also compiles a clear-storage variant by pointing
+    // KEYBOARD_TOML_PATH at a temp copy; re-run (and so recompile the keymap
+    // macro) whenever that path or the file it names changes.
+    println!("cargo:rerun-if-env-changed=KEYBOARD_TOML_PATH");
+    if let Ok(p) = env::var("KEYBOARD_TOML_PATH") {
+        println!("cargo:rerun-if-changed={p}");
+    }
 
     // Generate vial config from config/vial.json
     println!("cargo:rerun-if-changed=config/vial.json");
