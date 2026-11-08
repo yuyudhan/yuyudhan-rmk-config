@@ -1,28 +1,24 @@
 # Bluetooth profiles — model, key combos, recovery
 
 How the yuyudhan-1 handles BLE host profiles, what the OLED tells you, and the
-exact procedures when a computer will not connect. Firmware: stock upstream
-RMK, pinned to main commit `6c89c4b` (after v0.9.0) in `Cargo.toml`. No local patches.
+exact procedures when a computer will not connect. Firmware: RMK branch
+`yuyudhan/per-profile-address` (main `6c89c4b` + one local patch, upstream
+issue #901), pinned by rev in `Cargo.toml` from the local clone `../rmk`.
 
 ## Profile model
 
 - **4 profiles** (`ble_profiles_num = 4` in `config/keyboard.toml`), P0–P3.
   A profile stores one host bond (encryption keys) in flash on the left half.
-- **One BLE identity.** All profiles advertise the same device
-  ("yuyudhan-1", one address). Hosts always initiate reconnection — the
-  keyboard only advertises and waits.
-- **Advertising is unfiltered (stock RMK).** Any bonded computer in range
-  can connect while the keyboard advertises. If it is not the active
-  profile's computer, RMK drops it and advertises again. So a second bonded
-  computer nearby can delay the switch or "steal" it (upstream issue
-  [#901](https://github.com/rmk-rs/rmk/issues/901), still open). Workaround:
-  turn Bluetooth off on the computer you are leaving, or keep it out of range.
-- **What a switch does:** drop the current host, wait for the link to close,
-  advertise every 200 ms, the target computer notices and connects,
-  encryption from the stored bond, then the OLED marker clears. Steps 1–2 and
-  the 200 ms interval are on the keyboard side and are fixed in RMK (no
-  `keyboard.toml` setting); noticing the advert and connecting is the
-  computer's Bluetooth stack. Typically 1–3 s.
+- **One address per profile.** Every profile advertises "yuyudhan-1" from its
+  own static random address (`ext_adv`). P0 keeps the original address; P1–P3
+  use the same address with byte 3 raised by the profile number. A computer
+  only sees the keyboard while its own profile is active, so a second bonded
+  computer nearby can no longer take the connection (#901). A connection that
+  still lands on the previous profile's address is dropped.
+- **What a switch does:** drop the current host, advertise from the new
+  profile's address every 30 ms for 30 s (then every 200 ms), the target
+  computer notices and connects, encryption from the stored bond, then the
+  OLED marker clears. The same 30 s fast window runs after a wake.
 - **USB wins when cabled.** With a data cable attached and the preferred
   output set to USB (the default), keys go over the cable even while a BLE
   profile is connected. Toggle with ESC+N.
@@ -69,8 +65,9 @@ mismatch that fails silently.
 
 ### Still failing after a clean re-pair
 
-Turn Bluetooth OFF on the other computer and retry. If it now works, the
-other computer was taking the connection (#901). If it still fails alone,
+Turn Bluetooth OFF on the other computer and retry. With per-profile
+addresses another computer should not take the connection; if it now works,
+report it (#901 regression). If it still fails alone,
 that computer's BT stack is stuck — macOS: `sudo pkill bluetoothd`;
 Windows: disable/enable the Bluetooth adapter; Linux:
 `bluetoothctl remove <addr>` + `systemctl restart bluetooth` — then re-pair.
@@ -87,3 +84,5 @@ Windows: disable/enable the Bluetooth adapter; Linux:
   computer had to forget and re-pair the keyboard once.
 - 2026-11-08: moved from the v0.9.0 tag to RMK main `6c89c4b` (battery
   settings moved to `[split.*.battery]` tables; no other config change).
+- 2026-11-08: per-profile addresses (local RMK patch). P1–P3 computers had
+  to forget the keyboard and pair again once; P0 kept its bond.

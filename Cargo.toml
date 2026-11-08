@@ -7,10 +7,13 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-# Pinned to an RMK main commit (rmk-rs/rmk @ 6c89c4b, after v0.9.0).
+# Pinned to the local RMK branch `yuyudhan/per-profile-address` (RMK main
+# 6c89c4b + per-profile BLE addresses, upstream issue #901). The clone lives at
+# ../rmk on this machine only; other machines need a GitHub fork URL instead.
 # Bump deliberately: change the rev, then run `just check both`.
-rmk = { git = "https://github.com/rmk-rs/rmk", rev = "6c89c4ba16b8000dca765962b6e18341de76cb2e", features = [
+rmk = { git = "file:///home/yuyudhan/code/toli/projects/rmk", rev = "b4c481a5ebabd45861342e05efb0e81f69f061e4", features = [
     "nrf52840_ble",
+    "ext_adv",
     "split",
     "async_matrix",
     "adafruit_bl",
