@@ -119,7 +119,7 @@ name = "MOUSE"
 keys = """
 _______ No   No   No   No   No                          No             No             No             No             No _______
 _______ LGui LAlt LCtrl LShift MouseAccel2               MouseLeft      MouseDown      MouseUp        MouseRight     No _______
-No   No   No   No   No   No                           MouseWheelLeft MouseWheelDown MouseWheelUp   MouseWheelRight No No
+No   No   No   No   No   No                           MouseWheelLeft MouseWheelUp   MouseWheelDown MouseWheelRight No No
                MouseBtn4 MouseBtn5 No             MouseBtn1      MouseBtn3      MouseBtn2
 """
 
