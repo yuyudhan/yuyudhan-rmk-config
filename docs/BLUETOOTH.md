@@ -2,7 +2,7 @@
 
 How the yuyudhan-1 handles BLE host profiles, what the OLED tells you, and the
 exact procedures when a computer will not connect. Firmware: stock upstream
-RMK, pinned to the `rmk-v0.9.0` tag in `Cargo.toml`. No local patches.
+RMK, pinned to main commit `6c89c4b` (after v0.9.0) in `Cargo.toml`. No local patches.
 
 ## Profile model
 
@@ -85,3 +85,5 @@ Windows: disable/enable the Bluetooth adapter; Linux:
   maintainer's multi-connection PR #1319 (open).
 - 2026-11-07: moved to RMK v0.9.0. Its HID report IDs changed, so every
   computer had to forget and re-pair the keyboard once.
+- 2026-11-08: moved from the v0.9.0 tag to RMK main `6c89c4b` (battery
+  settings moved to `[split.*.battery]` tables; no other config change).

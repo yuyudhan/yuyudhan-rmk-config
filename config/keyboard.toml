@@ -33,8 +33,6 @@ clear_layout = false
 
 [ble]
 enabled = true
-# vddh: RMK reads VDDH/5 directly; ADC divider values would be ignored.
-battery_adc_pin = "vddh"
 # Connection and split-link TX power (sdc_default_tx_power_set). Without it
 # they stay at the 0 dBm reset value; RMK only forces +8 dBm on advertising.
 default_tx_power = 8
@@ -155,6 +153,9 @@ cols = 6
 row_offset = 0
 col_offset = 0
 ble_addr = [0x18, 0xe2, 0x21, 0x80, 0xc0, 0xc7]
+
+[split.central.battery]
+# vddh: RMK reads VDDH/5 directly; ADC divider values would be ignored.
 battery_adc_pin = "vddh"
 
 [split.central.matrix]
@@ -180,6 +181,8 @@ cols = 6
 row_offset = 0
 col_offset = 6
 ble_addr = [0x7e, 0xfe, 0x73, 0x9e, 0x66, 0xe3]
+
+[split.peripheral.battery]
 battery_adc_pin = "vddh"
 
 [split.peripheral.matrix]

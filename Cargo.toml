@@ -7,27 +7,27 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-# Pinned to the RMK v0.9.0 release (rmk-rs/rmk, formerly HaoboGu/rmk).
-# Bump deliberately: change the tag, then run `just check both`.
-rmk = { git = "https://github.com/rmk-rs/rmk", tag = "rmk-v0.9.0", features = [
+# Pinned to an RMK main commit (rmk-rs/rmk @ 6c89c4b, after v0.9.0).
+# Bump deliberately: change the rev, then run `just check both`.
+rmk = { git = "https://github.com/rmk-rs/rmk", rev = "6c89c4ba16b8000dca765962b6e18341de76cb2e", features = [
     "nrf52840_ble",
     "split",
     "async_matrix",
     "adafruit_bl",
     "ssd1306",
 ] }
-nrf-sdc = { version = "0.4.0", features = [
+nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc", rev = "9cf87fa7883b89b2d4dc7cd94864da7927bd858c", features = [
     "defmt",
     "peripheral",
     "central",
     "nrf52840",
 ] }
-nrf-mpsl = { version = "0.4.0", features = [
+nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc", rev = "9cf87fa7883b89b2d4dc7cd94864da7927bd858c", features = [
     "defmt",
     "critical-section-impl",
     "nrf52840",
 ] }
-bt-hci = { version = "0.10", features = ["defmt"] }
+bt-hci = { version = "0.11", features = ["defmt"] }
 
 cortex-m = "0.7.7"
 cortex-m-rt = "0.7.5"
