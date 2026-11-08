@@ -4,6 +4,11 @@ How the yuyudhan-1 handles BLE host profiles, what the OLED tells you, and the
 exact procedures when a computer will not connect. Firmware: RMK branch
 `yuyudhan/per-profile-address` (main `6c89c4b` + one local patch, upstream
 issue #901), pinned by rev in `Cargo.toml` from the local clone `../rmk`.
+It builds only on this Linux machine until that branch is pushed to a fork.
+
+Any change to the RMK rev or its features changes RMK's storage schema hash,
+so the first boot erases all storage on both halves (every bond and Vial
+keymap edit). Every computer must then forget the keyboard and pair again.
 
 ## Profile model
 
@@ -84,5 +89,7 @@ Windows: disable/enable the Bluetooth adapter; Linux:
   computer had to forget and re-pair the keyboard once.
 - 2026-11-08: moved from the v0.9.0 tag to RMK main `6c89c4b` (battery
   settings moved to `[split.*.battery]` tables; no other config change).
-- 2026-11-08: per-profile addresses (local RMK patch). P1–P3 computers had
-  to forget the keyboard and pair again once; P0 kept its bond.
+- 2026-11-08: per-profile addresses (local RMK patch). Upgrading from v0.9.0
+  erased all storage on both halves on first boot (storage schema hash
+  mismatch), so every computer, P0 included, had to forget and re-pair, and
+  Vial keymap edits had to be redone.

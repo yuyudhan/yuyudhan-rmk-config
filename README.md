@@ -55,6 +55,11 @@ See [docs/BLUETOOTH.md](docs/BLUETOOTH.md) for the profile model and recovery.
 
 ## Build
 
+**This firmware builds only on this Linux machine** for now: `Cargo.toml` pins RMK to the
+local clone `file:///home/yuyudhan/code/toli/projects/rmk` (branch
+`yuyudhan/per-profile-address`). Other machines (the Mac) need that branch pushed to a
+GitHub fork and `Cargo.toml` pointed at it.
+
 Requires [`just`](https://github.com/casey/just), a Rust toolchain, and (one-time) the
 embedded tools. `just setup` installs the Rust-side tools. The build also needs two host
 packages that `just setup` does not install: libclang (bindgen in `nrf-mpsl-sys`; Linux:
