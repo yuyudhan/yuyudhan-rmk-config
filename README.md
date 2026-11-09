@@ -157,6 +157,20 @@ Then, per half:
    an existing desktop automount), copies the `.uf2`, syncs, and unmounts; the board reboots.
 4. Unplug, then repeat for the other half.
 
+### Flash over serial (no USB drive)
+
+On a host that blocks USB mass storage (managed laptops), the `NICENANO` drive never mounts,
+but the bootloader's USB serial port usually still works. One-time:
+`uv tool install adafruit-nrfutil` (or `pipx install adafruit-nrfutil`). Then, per half:
+
+1. Plug the half in over USB and double-tap its reset button (it appears as
+   `/dev/cu.usbmodem*` on macOS, `/dev/ttyACM*` on Linux).
+2. Run `just flash-serial left` (same version/`--clear-storage` arguments as `just flash`;
+   set `PORT=/dev/...` if several serial ports are present).
+
+It converts the `.uf2` into a DFU package (`<name>.dfu.zip` next to it; `--package-only` stops
+there) and sends it with `adafruit-nrfutil dfu serial … -b 115200 --singlebank`.
+
 ## Editing the keymap
 
 - **Static:** edit the `[[keymap.layer]]` `keys` blocks in `config/keyboard.toml`. The

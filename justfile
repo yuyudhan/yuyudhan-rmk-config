@@ -10,6 +10,8 @@
 #   just flash left      # copy newest rmk-central.uf2 onto a mounted NICENANO
 #   just flash right     # copy newest rmk-peripheral.uf2 onto a mounted NICENANO
 #   just flash left --clear-storage   # one-shot wipe image; then `just flash left`
+#   just flash-serial left 0.0.44     # same image over the bootloader's USB serial port
+#                                     # (no NICENANO drive / USB mass storage needed)
 #
 # Every build archives its UF2(s) — a normal and a *-clear-storage.uf2 per half —
 # + a config snapshot into a local firmware/<datetime>_y<ver>/ directory (gitignored)
@@ -172,25 +174,7 @@ flash target *args:
       esac
     done
     suffix=""; [ "$clear" = 1 ] && suffix="-clear-storage"
-    case "{{target}}" in
-      left)  name="rmk-central${suffix}.uf2" ;;
-      right) name="rmk-peripheral${suffix}.uf2" ;;
-      *) echo "Unknown target: {{target}}  (valid: left | right)" >&2; exit 1 ;;
-    esac
-    # Newest archived copy by mtime (optionally filtered by version), else the
-    # loose repo-root build.
-    if [ -n "$ver" ]; then
-      file="$(ls -1t firmware/*_y"$ver"/"$name" 2>/dev/null | head -1 || true)"
-      if [ -z "$file" ]; then
-        echo "No $name found for version y$ver in firmware/." >&2; exit 1
-      fi
-    else
-      file="$(ls -1t firmware/*/"$name" 2>/dev/null | head -1 || true)"
-      [ -z "$file" ] && [ -f "$name" ] && file="$name"
-      if [ -z "$file" ]; then
-        echo "No $name found. Build it first: just build {{target}}" >&2; exit 1
-      fi
-    fi
+    file="$({{just_executable()}} _pick-uf2 {{target}} "$suffix" "$ver")"
     if [ "$clear" = 1 ]; then
       echo "!!  CLEAR-STORAGE image: wipes ALL BLE pairings and the saved (Vial) keymap"
       echo "!!  on the {{target}} half, and keeps wiping on EVERY boot until reflashed."
@@ -229,6 +213,89 @@ flash target *args:
     if [ "$clear" = 1 ]; then
       echo "==> Storage wiped on boot. Now double-tap reset on the {{target}} half and run: just flash {{target}}"
     fi
+
+# Flash over the bootloader's USB serial port (serial DFU) — for hosts that block
+# USB mass storage, so the NICENANO drive never mounts. target = left | right.
+# Double-tap reset on the target half first; its port appears as /dev/cu.usbmodem*
+# (macOS) or /dev/ttyACM* (Linux). Override with PORT=/dev/... if several are present.
+# Picks the .uf2 exactly like `just flash`, converts it to a DFU package
+# (<name>.dfu.zip next to the .uf2) and sends it with adafruit-nrfutil.
+# Needs adafruit-nrfutil: `uv tool install adafruit-nrfutil` (or pipx install).
+# e.g. `just flash-serial left 0.0.44`
+#      `just flash-serial left --clear-storage`
+#      `just flash-serial left 0.0.44 --package-only`  -> only build the .dfu.zip
+# (flashing is destructive)
+flash-serial target *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    clear=0; pkg_only=0; ver=""
+    for a in {{args}}; do
+      case "$a" in
+        --clear-storage) clear=1 ;;
+        --package-only) pkg_only=1 ;;
+        -*) echo "Unknown flag: $a  (valid: --clear-storage --package-only)" >&2; exit 1 ;;
+        *) ver="$a" ;;
+      esac
+    done
+    suffix=""; [ "$clear" = 1 ] && suffix="-clear-storage"
+    file="$({{just_executable()}} _pick-uf2 {{target}} "$suffix" "$ver")"
+    command -v adafruit-nrfutil >/dev/null || {
+      echo "adafruit-nrfutil not found. Install it: uv tool install adafruit-nrfutil" >&2; exit 1; }
+    pkg="${file%.uf2}.dfu.zip"
+    if [ ! -f "$pkg" ] || [ "$file" -nt "$pkg" ]; then
+      tmpd="$(mktemp -d)"
+      trap 'rm -rf "$tmpd"' EXIT
+      hex="$tmpd/app.hex"
+      python3 scripts/uf2_to_hex.py "$file" "$hex"
+      adafruit-nrfutil dfu genpkg --dev-type 0x0052 --application "$hex" "$pkg" >/dev/null
+      echo "==> DFU package $pkg"
+    fi
+    if [ "$clear" = 1 ]; then
+      echo "!!  CLEAR-STORAGE image: wipes ALL BLE pairings and the saved (Vial) keymap"
+      echo "!!  on the {{target}} half, and keeps wiping on EVERY boot until reflashed."
+    fi
+    [ "$pkg_only" = 1 ] && exit 0
+    port="${PORT:-}"
+    if [ -z "$port" ]; then
+      shopt -s nullglob
+      case "$(uname -s)" in
+        Darwin) ports=(/dev/cu.usbmodem*) ;;
+        *) ports=(/dev/ttyACM*) ;;
+      esac
+      if [ "${#ports[@]}" -eq 0 ]; then
+        echo "No bootloader serial port found (/dev/cu.usbmodem* or /dev/ttyACM*)." >&2
+        echo "Plug the {{target}} half in by USB, double-tap its reset button, then re-run." >&2
+        exit 1
+      fi
+      if [ "${#ports[@]}" -gt 1 ]; then
+        echo "Several serial ports: ${ports[*]}  — pick one: PORT=<port> just flash-serial {{target}} {{args}}" >&2
+        exit 1
+      fi
+      port="${ports[0]}"
+    fi
+    echo "==> Flashing $pkg -> $port"
+    adafruit-nrfutil --verbose dfu serial -pkg "$pkg" -p "$port" -b 115200 --singlebank
+    echo "==> Done. The nice!nano reboots into the new firmware."
+
+# Print the .uf2 to flash: newest firmware/<datetime>/ archive (filtered by version
+# when given), else the loose repo-root build. suffix = "" | "-clear-storage".
+_pick-uf2 target suffix ver:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{target}}" in
+      left)  name="rmk-central{{suffix}}.uf2" ;;
+      right) name="rmk-peripheral{{suffix}}.uf2" ;;
+      *) echo "Unknown target: {{target}}  (valid: left | right)" >&2; exit 1 ;;
+    esac
+    if [ -n "{{ver}}" ]; then
+      file="$(ls -1t firmware/*_y"{{ver}}"/"$name" 2>/dev/null | head -1 || true)"
+      [ -n "$file" ] || { echo "No $name found for version y{{ver}} in firmware/." >&2; exit 1; }
+    else
+      file="$(ls -1t firmware/*/"$name" 2>/dev/null | head -1 || true)"
+      [ -z "$file" ] && [ -f "$name" ] && file="$name"
+      [ -n "$file" ] || { echo "No $name found. Build it first: just build {{target}}" >&2; exit 1; }
+    fi
+    echo "$file"
 
 # Remove the Rust build cache + the build/ staging dir (keeps firmware/<datetime>/ archive).
 clean:
