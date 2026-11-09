@@ -34,9 +34,7 @@ split_central_sleep_timeout_seconds = 300
 # clear_layout = true for ONE build/flash (resets the keymap only, keeps bonds),
 # then set it back to false.
 clear_storage = false
-# true for the T736 flash (new MouseAccel0/1 keys on MOUSE); set back to false
-# once the left half runs it.
-clear_layout = true
+clear_layout = false
 
 [ble]
 enabled = true
