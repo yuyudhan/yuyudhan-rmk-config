@@ -16,11 +16,16 @@ dcdc_reg1 = true
 
 [rmk]
 ble_profiles_num = 4
-# Mouse keys (RMK v0.9.0 exposes only the repeat interval in keyboard.toml;
-# step 5 px, 3x max multiplier, 50 ticks to max and the 100 ms first-repeat
-# delay are fixed). 10 ms (default 20): a tap still moves one 5 px step, a
-# hold ramps from ~500 to ~1500 px/s in ~0.5 s (was ~250 -> ~750 px/s in ~1 s).
-mouse_key_interval = 10
+# Mouse keys. RMK v0.9.0 exposes only the repeat intervals in keyboard.toml;
+# the rest is fixed: step 5, 3x max multiplier, 50 ticks to max, 100 ms
+# first-repeat delay, 25 per report cap. At 20 ms (the RMK default) a tap
+# moves 5 and a hold ramps gently from ~250 to ~750 /s over ~1 s. The 10 ms
+# tried in d2afe8b (~500 -> ~1500 /s in ~0.5 s) was too fast to point
+# precisely. Speed changes live on held MOUSE-layer keys instead:
+# MouseAccel0 (B) 0.25x precision, MouseAccel1 (T) 0.5x, MouseAccel2 (G) 2x.
+mouse_key_interval = 20
+# Scroll wheel: one notch per 80 ms (RMK default), unchanged.
+mouse_wheel_interval = 80
 split_central_sleep_timeout_seconds = 300
 
 [storage]
@@ -29,7 +34,9 @@ split_central_sleep_timeout_seconds = 300
 # clear_layout = true for ONE build/flash (resets the keymap only, keeps bonds),
 # then set it back to false.
 clear_storage = false
-clear_layout = false
+# true for the T736 flash (new MouseAccel0/1 keys on MOUSE); set back to false
+# once the left half runs it.
+clear_layout = true
 
 [ble]
 enabled = true
@@ -115,13 +122,15 @@ No       F10 F1 F2 F3 No                                 No No No No No No
            Menu Space Tab                       No No No
 """
 
-# Layer 6 — MOUSE (MouseAccel2 on G: hold it with the left index for 2x speed)
+# Layer 6 — MOUSE. Hold these with the left index while moving to change speed
+# (they do nothing alone): T = MouseAccel1 0.5x (slow), G = MouseAccel2 2x
+# (fast travel), B = MouseAccel0 0.25x (precision). If two are held, the fastest wins.
 [[keymap.layer]]
 name = "MOUSE"
 keys = """
-_______ No   No   No   No   No                          No             No             No             No             No _______
+_______ No   No   No   No   MouseAccel1                 No             No             No             No             No _______
 _______ LGui LAlt LCtrl LShift MouseAccel2               MouseLeft      MouseDown      MouseUp        MouseRight     No _______
-No   No   No   No   No   No                           MouseWheelLeft MouseWheelDown MouseWheelUp   MouseWheelRight No No
+No   No   No   No   No   MouseAccel0                  MouseWheelLeft MouseWheelDown MouseWheelUp   MouseWheelRight No No
                MouseBtn4 MouseBtn5 No             MouseBtn1      MouseBtn3      MouseBtn2
 """
 

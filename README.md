@@ -26,12 +26,12 @@ One profile, one keymap. Everything lives in `config/keyboard.toml`; there is no
 | Layer | Thumb (hold) | Contents |
 |-------|--------------|----------|
 | 0 BASE | — | QWERTY + GACS home-row mods (A/S/D/F = GUI/Alt/Ctrl/Shift, mirrored J/K/L/') |
-| 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn |
+| 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn, Caps Lock + Caps Word |
 | 2 NUM | Backspace | columnar numpad + brackets/symbols on the left hand |
 | 3 MEDIA | Escape | volume, brightness, media transport, Bluetooth (BT0–3 / clear current / USB-BLE toggle), lock |
 | 4 SYM | Enter | programmer symbols on the left hand |
-| 5 FUN | Delete | F1–F12 + screenshot ⇧⌘4 (file) + Caps Word |
-| 6 MOUSE | Tab | pointer move, scroll wheel, mouse buttons |
+| 5 FUN | Delete | F1–F12 + screenshot ⇧⌘4 (file) |
+| 6 MOUSE | Tab | pointer move, scroll wheel, mouse buttons, speed keys (see below) |
 
 **Home-row mods** use the `HRM` morse profile (permissive-hold + unilateral-tap + flow-tap,
 200 ms hold, 120 ms prior-idle). **Thumb layer-taps** use the `TL` profile (permissive-hold,
@@ -52,6 +52,18 @@ RMK exposes BLE control as `User` keycodes (4 profiles configured via `ble_profi
 
 Positions on MEDIA: `User0` L, `User1` ', `User2` ., `User3` /, `User6` O, `User7` N.
 See [docs/BLUETOOTH.md](docs/BLUETOOTH.md) for the profile model and recovery.
+
+### MOUSE-layer speed
+
+`mouse_key_interval = 20` (RMK default): a tap moves 5, a hold starts at ~250/s and
+ramps gently to ~750/s over ~1 s. The wheel scrolls one notch per 80 ms. Hold a speed key
+with the left index while moving (they do nothing alone; if two are held, the fastest wins):
+
+| Key | Keycode | Speed | Hold range |
+|-----|---------|-------|------------|
+| B | `MouseAccel0` | 0.25x, precision | ~100 → ~200/s |
+| T | `MouseAccel1` | 0.5x, slow | ~150 → ~400/s |
+| G | `MouseAccel2` | 2x, fast travel | ~500 → ~1250/s |
 
 ## Build
 

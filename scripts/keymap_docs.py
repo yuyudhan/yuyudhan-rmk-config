@@ -59,6 +59,7 @@ KEYCODE_DISPLAY: dict[str, str] = {
     "MouseWheelUp": "W↑", "MouseWheelRight": "W→",
     "MouseBtn1": "LMB", "MouseBtn2": "RMB", "MouseBtn3": "MMB",
     "MouseBtn4": "Back", "MouseBtn5": "Fwd",
+    "MouseAccel0": "Slow¼", "MouseAccel1": "Slow½", "MouseAccel2": "Fast2x",
     # Bluetooth / output User keys  (ble_profiles_num = 4)
     "User0": "BT0", "User1": "BT1", "User2": "BT2", "User3": "BT3",
     "User4": "BT→", "User5": "BT←",
@@ -109,11 +110,11 @@ LAYER_NUM_NAME: dict[int, str] = {
 # Layer name → description
 LAYER_DESC: dict[str, str] = {
     "BASE":  "QWERTY + GACS home-row mods (A/S/D/F = GUI/Alt/Ctrl/Shift, mirrored on J/K/L/\')",
-    "NAV":   "hold Space — vim arrows HJKL, Home/End/PgUp/PgDn, Caps",
+    "NAV":   "hold Space — vim arrows HJKL, Home/End/PgUp/PgDn, Caps Lock + Caps Word",
     "NUM":   "hold Bspc — columnar numpad + brackets/symbols on left hand",
     "MEDIA": "hold Esc — volume, brightness, media transport, Bluetooth (BT0–3 / clear / USB-BLE toggle)",
     "SYM":   "hold Enter — programmer symbols on left hand",
-    "FUN":   "hold Del — F1–F12 + screenshot ⇧⌘4 (file) + Caps Word",
+    "FUN":   "hold Del — F1–F12 + screenshot ⇧⌘4 (file)",
     "MOUSE": "hold Tab — pointer move, scroll wheel, double/triple click, Back/Forward, speed control",
     "DISPOFF": "TG(7) from MEDIA — blanks both OLED displays; toggle again to restore",
 }
