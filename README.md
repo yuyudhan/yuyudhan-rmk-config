@@ -26,12 +26,12 @@ One profile, one keymap. Everything lives in `config/keyboard.toml`; there is no
 | Layer | Thumb (hold) | Contents |
 |-------|--------------|----------|
 | 0 BASE | — | QWERTY + GACS home-row mods (A/S/D/F = GUI/Alt/Ctrl/Shift, mirrored J/K/L/') |
-| 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn |
+| 1 NAV | Space | vim arrows (HJKL), Home/End/PgUp/PgDn, Caps Lock + Caps Word |
 | 2 NUM | Backspace | columnar numpad + brackets/symbols on the left hand |
 | 3 MEDIA | Escape | volume, brightness, media transport, Bluetooth (BT0–3 / clear current / USB-BLE toggle), lock |
 | 4 SYM | Enter | programmer symbols on the left hand |
-| 5 FUN | Delete | F1–F12 + screenshot ⇧⌘4 (file) + Caps Word |
-| 6 MOUSE | Tab | pointer move, scroll wheel, mouse buttons |
+| 5 FUN | Delete | F1–F12 + screenshot ⇧⌘4 (file) |
+| 6 MOUSE | Tab | pointer move, scroll wheel, mouse buttons, speed keys (see below) |
 
 **Home-row mods** use the `HRM` morse profile (permissive-hold + unilateral-tap + flow-tap,
 200 ms hold, 120 ms prior-idle). **Thumb layer-taps** use the `TL` profile (permissive-hold,
@@ -53,12 +53,23 @@ RMK exposes BLE control as `User` keycodes (4 profiles configured via `ble_profi
 Positions on MEDIA: `User0` L, `User1` ', `User2` ., `User3` /, `User6` O, `User7` N.
 See [docs/BLUETOOTH.md](docs/BLUETOOTH.md) for the profile model and recovery.
 
+### MOUSE-layer speed
+
+`mouse_key_interval = 20` (RMK default): a tap moves 5, a hold starts at ~250/s and
+ramps gently to ~750/s over ~1 s. The wheel scrolls one notch per 80 ms. Hold a speed key
+with the left index while moving (they do nothing alone; if two are held, the fastest wins):
+
+| Key | Keycode | Speed | Hold range |
+|-----|---------|-------|------------|
+| B | `MouseAccel0` | 0.25x, precision | ~100 → ~200/s |
+| T | `MouseAccel1` | 0.5x, slow | ~150 → ~400/s |
+| G | `MouseAccel2` | 2x, fast travel | ~500 → ~1250/s |
+
 ## Build
 
-**This firmware builds only on this Linux machine** for now: `Cargo.toml` pins RMK to the
-local clone `file:///home/yuyudhan/code/toli/projects/rmk` (branch
-`yuyudhan/per-profile-address`). Other machines (the Mac) need that branch pushed to a
-GitHub fork and `Cargo.toml` pointed at it.
+`Cargo.toml` pins RMK to the GitHub fork `https://github.com/yuyudhan/rmk` (branch
+`yuyudhan/per-profile-address`, rev `b4c481a`), so the Linux machine and the Mac build the
+same firmware.
 
 Requires [`just`](https://github.com/casey/just), a Rust toolchain, and (one-time) the
 embedded tools. `just setup` installs the Rust-side tools. The build also needs two host
@@ -130,6 +141,39 @@ it must always be followed by a normal flash:
 The same works for the right half (`just flash right --clear-storage`): the peripheral keeps
 its split bond to the central in storage, so clearing it forces the halves to re-pair — clear
 both halves together if you do it. Hosts must then be re-paired to the left half.
+
+### Flash from Linux
+
+Same UF2 drag-and-drop, no probe. One-time host setup (installs
+`scripts/50-yuyudhan-1.rules` into `/etc/udev/rules.d/`, adds a no-sudo `user` fstab mount for the
+`NICENANO` drive at `/mnt/nicenano`, and adds you to `plugdev`/`dialout`):
+
+```sh
+just setup && just setup-linux
+```
+
+Then, per half:
+
+1. Build if needed: `just build both` (or `just build left`).
+2. Plug the half into the Linux machine over USB and double-tap its reset button; it shows up as
+   the `NICENANO` drive (`/dev/disk/by-label/NICENANO`).
+3. Run `just flash left` (or `just flash right`). It mounts the drive at `/mnt/nicenano` (or uses
+   an existing desktop automount), copies the `.uf2`, syncs, and unmounts; the board reboots.
+4. Unplug, then repeat for the other half.
+
+### Flash over serial (no USB drive)
+
+On a host that blocks USB mass storage (managed laptops), the `NICENANO` drive never mounts,
+but the bootloader's USB serial port usually still works. One-time:
+`uv tool install adafruit-nrfutil` (or `pipx install adafruit-nrfutil`). Then, per half:
+
+1. Plug the half in over USB and double-tap its reset button (it appears as
+   `/dev/cu.usbmodem*` on macOS, `/dev/ttyACM*` on Linux).
+2. Run `just flash-serial left` (same version/`--clear-storage` arguments as `just flash`;
+   set `PORT=/dev/...` if several serial ports are present).
+
+It converts the `.uf2` into a DFU package (`<name>.dfu.zip` next to it; `--package-only` stops
+there) and sends it with `adafruit-nrfutil dfu serial … -b 115200 --singlebank`.
 
 ## Editing the keymap
 

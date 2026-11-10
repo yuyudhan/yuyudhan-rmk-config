@@ -2027,7 +2027,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 [[package]]
 name = "rmk"
 version = "0.9.0"
-source = "git+file:///home/yuyudhan/code/toli/projects/rmk?rev=b4c481a5ebabd45861342e05efb0e81f69f061e4#b4c481a5ebabd45861342e05efb0e81f69f061e4"
+source = "git+https://github.com/yuyudhan/rmk?rev=b4c481a5ebabd45861342e05efb0e81f69f061e4#b4c481a5ebabd45861342e05efb0e81f69f061e4"
 dependencies = [
  "bt-hci",
  "byteorder",
@@ -2070,7 +2070,7 @@ dependencies = [
 [[package]]
 name = "rmk-config"
 version = "0.8.0"
-source = "git+file:///home/yuyudhan/code/toli/projects/rmk?rev=b4c481a5ebabd45861342e05efb0e81f69f061e4#b4c481a5ebabd45861342e05efb0e81f69f061e4"
+source = "git+https://github.com/yuyudhan/rmk?rev=b4c481a5ebabd45861342e05efb0e81f69f061e4#b4c481a5ebabd45861342e05efb0e81f69f061e4"
 dependencies = [
  "config",
  "miniz_oxide",
@@ -2087,7 +2087,7 @@ dependencies = [
 [[package]]
 name = "rmk-macro"
 version = "0.8.0"
-source = "git+file:///home/yuyudhan/code/toli/projects/rmk?rev=b4c481a5ebabd45861342e05efb0e81f69f061e4#b4c481a5ebabd45861342e05efb0e81f69f061e4"
+source = "git+https://github.com/yuyudhan/rmk?rev=b4c481a5ebabd45861342e05efb0e81f69f061e4#b4c481a5ebabd45861342e05efb0e81f69f061e4"
 dependencies = [
  "cargo_toml",
  "darling 0.24.1",
@@ -2103,7 +2103,7 @@ dependencies = [
 [[package]]
 name = "rmk-types"
 version = "0.4.0"
-source = "git+file:///home/yuyudhan/code/toli/projects/rmk?rev=b4c481a5ebabd45861342e05efb0e81f69f061e4#b4c481a5ebabd45861342e05efb0e81f69f061e4"
+source = "git+https://github.com/yuyudhan/rmk?rev=b4c481a5ebabd45861342e05efb0e81f69f061e4#b4c481a5ebabd45861342e05efb0e81f69f061e4"
 dependencies = [
  "bitfield-struct",
  "defmt 1.1.0",
